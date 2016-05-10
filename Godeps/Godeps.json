@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/hackersguildco/matchserver",
+	"ImportPath": "github.com/mrkaspa/matchserver",
 	"GoVersion": "go1.6",
 	"Deps": [
 		{

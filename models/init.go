@@ -3,7 +3,7 @@ package models
 import (
 	"os"
 
-	"github.com/hackersguildco/matchserver/utils"
+	"github.com/mrkaspa/matchserver/utils"
 
 	"gopkg.in/mgo.v2"
 )

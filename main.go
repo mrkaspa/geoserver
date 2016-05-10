@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	_ "github.com/hackersguildco/matchserver/models" // init
-	_ "github.com/hackersguildco/matchserver/utils"
-	"github.com/hackersguildco/matchserver/ws"
+	_ "github.com/mrkaspa/matchserver/models" // init
+	_ "github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/matchserver/ws"
 	"github.com/joho/godotenv"
 )
 

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/hackersguildco/matchserver/utils"
+	"github.com/mrkaspa/matchserver/utils"
 
 	"github.com/gorilla/mux"
 )

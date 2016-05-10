@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hackersguildco/matchserver/utils"
+	"github.com/mrkaspa/matchserver/utils"
 	"github.com/gorilla/websocket"
 )
 
