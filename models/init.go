@@ -4,8 +4,7 @@ import (
 	"os"
 
 	"github.com/mrkaspa/matchserver/utils"
-
-	"gopkg.in/mgo.v2"
+	mgo "gopkg.in/mgo.v2"
 )
 
 var (
@@ -13,7 +12,7 @@ var (
 	Session           *mgo.Session
 )
 
-func init() {
+func Init() {
 	utils.Log.Infof("init DB: %s", os.Getenv("MONGO_URI"))
 	session, err := mgo.Dial(os.Getenv("MONGO_URI"))
 	if err != nil {

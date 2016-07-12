@@ -6,13 +6,18 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	_ "github.com/mrkaspa/matchserver/models" // init
-	_ "github.com/mrkaspa/matchserver/utils"
-	"github.com/mrkaspa/matchserver/ws"
 	"github.com/joho/godotenv"
+	"github.com/mrkaspa/matchserver/models"
+	"github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/matchserver/ws"
 )
 
 func main() {
+	initMain()
+	startServer()
+}
+
+func startServer(){
 	router := mux.NewRouter()
 	router.HandleFunc("/ws/{username}", ws.ServeWS)
 	http.Handle("/", router)
@@ -23,8 +28,10 @@ func main() {
 	}
 }
 
-func init() {
+func initMain() {
 	if err := godotenv.Load(".env_dev"); err != nil {
 		log.Fatal("Error loading .env_dev file")
 	}
+	utils.Init()
+	models.Init()
 }

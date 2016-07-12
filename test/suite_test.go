@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,7 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"github.com/mrkaspa/matchserver/models"
-	_ "github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/matchserver/utils"
 	"github.com/mrkaspa/matchserver/ws"
 
 	"github.com/gorilla/mux"
@@ -24,7 +23,6 @@ var (
 
 func Test(t *testing.T) {
 	RegisterFailHandler(Fail)
-	fmt.Println("Suite found")
 	RunSpecs(t, "Api WS")
 }
 
@@ -71,4 +69,6 @@ func init() {
 			break
 		}
 	}
+	utils.Init()
+	models.Init()
 }
