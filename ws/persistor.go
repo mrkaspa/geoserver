@@ -3,8 +3,8 @@ package ws
 import (
 	"time"
 
-	"github.com/mrkaspa/matchserver/models"
-	"github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/geoserver/models"
+	"github.com/mrkaspa/geoserver/utils"
 	"gopkg.in/mgo.v2/bson"
 )
 

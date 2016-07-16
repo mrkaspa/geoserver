@@ -3,7 +3,7 @@ package ws
 import (
 	"time"
 
-	"github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/geoserver/utils"
 )
 
 const timeAlive = 3
@@ -11,8 +11,8 @@ const timeAlive = 3
 type actorStatus int
 
 const (
-	_ = iota
-	alive
+	_                 = iota
+	alive actorStatus = 1
 	dead
 )
 

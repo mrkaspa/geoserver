@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mrkaspa/matchserver/utils"
 	"github.com/gorilla/websocket"
+	"github.com/mrkaspa/geoserver/utils"
 )
 
 const (

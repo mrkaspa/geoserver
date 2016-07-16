@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/mrkaspa/matchserver",
+	"ImportPath": "github.com/mrkaspa/geoserver",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v74",
 	"Deps": [

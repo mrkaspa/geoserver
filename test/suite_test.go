@@ -7,9 +7,9 @@ import (
 
 	"gopkg.in/mgo.v2/bson"
 
-	"github.com/mrkaspa/matchserver/models"
-	"github.com/mrkaspa/matchserver/utils"
-	"github.com/mrkaspa/matchserver/ws"
+	"github.com/mrkaspa/geoserver/models"
+	"github.com/mrkaspa/geoserver/utils"
+	"github.com/mrkaspa/geoserver/ws"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"

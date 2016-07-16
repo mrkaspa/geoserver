@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/geoserver/utils"
 
 	"github.com/gorilla/mux"
 )

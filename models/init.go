@@ -3,7 +3,7 @@ package models
 import (
 	"os"
 
-	"github.com/mrkaspa/matchserver/utils"
+	"github.com/mrkaspa/geoserver/utils"
 	mgo "gopkg.in/mgo.v2"
 )
 
