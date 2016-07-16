@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/mrkaspa/geoserver/handler"
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
-	"github.com/mrkaspa/geoserver/ws"
 )
 
 func main() {
@@ -18,9 +17,7 @@ func main() {
 }
 
 func startServer() {
-	router := mux.NewRouter()
-	router.HandleFunc("/ws/{username}", ws.ServeWS)
-	http.Handle("/", router)
+	http.Handle("/", handler.NewRouter())
 	port := os.Getenv("PORT")
 	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {

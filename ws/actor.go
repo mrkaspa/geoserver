@@ -56,53 +56,47 @@ func createActor(name string) *actor {
 
 // run the actor that represents the user
 func (a *actor) run() {
-	//TODO close resources
 	utils.Log.Infof("Running actor: %s", a.name)
 	for {
 		select {
 		case <-a.poisonPill:
 			a.die()
+			return
 		case conn := <-a.addConnection:
 			a.connections = append(a.connections, conn)
 		case conn := <-a.removeConnection:
 			a.removeConnectionBy(conn)
-		case postStrokeVar, more := <-a.strokes:
-			if more {
-				a.persist(postStrokeVar)
-			}
-		case users, more := <-a.nearUsers:
-			if more {
-				for _, u := range users {
-					searchActorVar := searchActor{
-						name:     u,
-						response: make(chan *actor),
-					}
-					searcherVar.search <- &searchActorVar
-					actorRef := <-searchActorVar.response
-					actorRef.ping <- a
-					a.matchedActors[actorRef] = false
+		case postStrokeVar := <-a.strokes:
+			a.persist(postStrokeVar)
+		case users := <-a.nearUsers:
+			for _, u := range users {
+				searchActorVar := searchActor{
+					name:     u,
+					response: make(chan *actor),
 				}
+				searcherVar.search <- &searchActorVar
+				actorRef := <-searchActorVar.response
+				actorRef.ping <- a
+				a.matchedActors[actorRef] = false
 			}
-		case actorPing, more := <-a.ping:
-			if _, ok := a.matchedActors[actorPing]; more && !ok {
+		case actorPing := <-a.ping:
+			if _, ok := a.matchedActors[actorPing]; !ok {
 				utils.Log.Infof("%s received a PING from %s", a.name, actorPing.name)
 				a.matchedActors[actorPing] = false
 				a.broadcast(actorPing)
 				actorPing.pong <- a
 			}
-		case actorPong, more := <-a.pong:
-			if more {
-				utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
-				utils.Log.Infof("Dead of %s depends on %s", actorPong.name, a.name)
-				a.matchedActors[actorPong] = true
-				actorPong.timer.Stop()
-				a.broadcast(actorPong)
-			}
+		case actorPong := <-a.pong:
+			utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
+			utils.Log.Infof("Dead of %s depends on %s", actorPong.name, a.name)
+			a.matchedActors[actorPong] = true
+			actorPong.timer.Stop()
+			a.broadcast(actorPong)
 		}
 	}
 }
 
-// timeout to kill the actor
+// timeout to kill the actor started after the actor is registered
 func (a *actor) startTimer() {
 	a.timer = time.NewTimer(timeAlive * time.Second)
 	<-a.timer.C
@@ -149,9 +143,11 @@ func (a *actor) removeConnectionBy(conn *connection) {
 func (a *actor) die() {
 	// kills the referenced actors
 	if a.status == alive {
-		a.status = dead
 		utils.Log.Infof("Actor dying: %s -- with %d connections", a.name, len(a.connections))
-		close(a.responses)
+
+		a.status = dead
+
+		//kills ponged actors
 		for actorRef, ponged := range a.matchedActors {
 			if ponged {
 				actorRef.poisonPill <- true

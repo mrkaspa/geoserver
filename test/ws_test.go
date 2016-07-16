@@ -88,7 +88,7 @@ var _ = Describe("WS Behavior", func() {
 			matchOtherTwo(wsConnUser3, postStrokeUser2.Info, postStrokeUser1.Info)
 		})
 
-		It("a1 and a2 should match, 3 shouldn't match", func() {
+		It("a1 and a2 should match, a3 shouldn't match", func() {
 			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
 			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
 			time.Sleep(3 * time.Second)

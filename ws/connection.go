@@ -23,7 +23,9 @@ const (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 // connection is an middleman between the websocket connection and the hub.
@@ -60,26 +62,33 @@ func (c *connection) readPump() {
 		}
 		c.ws.Close()
 	}()
+
 	c.ws.SetReadLimit(maxMessageSize)
 	c.ws.SetReadDeadline(time.Now().Add(pongWait))
-	c.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.ws.SetPongHandler(func(string) error {
+		c.ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
 		_, message, err := c.ws.ReadMessage()
 		if err != nil {
 			break
 		}
-		c.receive <- message
+		c.receive <- message // sends to processMessages
 	}
 }
 
 // writePump pumps messages from the hub to the websocket connection.
 func (c *connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
+
 	defer func() {
 		utils.Log.Infof("Finishing connection: %s", c.name)
 		ticker.Stop()
 		c.ws.Close()
 	}()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -88,24 +97,28 @@ func (c *connection) writePump() {
 			}
 		case <-c.poisonPill:
 			if len(c.send) == 0 {
-				utils.Log.Infof("Closing websocket: %s", c.name)
-				c.write(websocket.CloseMessage, []byte{})
+				c.die()
 				return
 			}
 			go c.dieLater()
-		case message := <-c.send: // channel used to finish the connection when it's closed
+		case message := <-c.send:
+			// channel used to finish the connection when it's closed
 			utils.Log.Infof("Into send channel for: %s, message: %s", c.name, string(message))
 			if err := c.write(websocket.TextMessage, message); err != nil {
 				return
 			}
-		case message := <-c.receive:
-			c.processMessages(message)
 		}
 	}
 }
 
+func (c *connection) processMessages() {
+	for message := range c.receive {
+		c.processMessage(message)
+	}
+}
+
 // process each message
-func (c *connection) processMessages(message []byte) {
+func (c *connection) processMessage(message []byte) {
 	register := registerActor{
 		name:     c.name,
 		response: make(chan *actor),
@@ -119,14 +132,9 @@ func (c *connection) processMessages(message []byte) {
 	json.Unmarshal(message, &postStrokeVar)
 	postStrokeVar.userID = actorRef.name
 	actorRef.strokes <- &postStrokeVar
-	for {
+	for response := range actorRef.responses {
 		// expects all the responses from the actor until it dies
-		response, more := <-actorRef.responses
-		if more {
-			c.send <- response
-		} else {
-			break
-		}
+		c.send <- response
 	}
 }
 
@@ -140,4 +148,9 @@ func (c *connection) dieLater() {
 	timer := time.NewTimer(100 * time.Millisecond)
 	<-timer.C
 	c.poisonPill <- true
+}
+
+func (c *connection) die() {
+	utils.Log.Infof("Closing websocket: %s", c.name)
+	c.write(websocket.CloseMessage, []byte{})
 }

@@ -7,11 +7,12 @@ import (
 
 	"gopkg.in/mgo.v2/bson"
 
+	"github.com/mrkaspa/geoserver/handler"
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
-	"github.com/mrkaspa/geoserver/ws"
 
-	"github.com/gorilla/mux"
+	"time"
+
 	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,8 +28,7 @@ func Test(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	router := mux.NewRouter()
-	router.HandleFunc("/ws/{username}", ws.ServeWS)
+	router := handler.NewRouter()
 	http.Handle("/", router)
 	ts = httptest.NewServer(router)
 })
@@ -36,6 +36,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	ts.Close()
 	models.Session.Close()
+	time.Sleep(1 * time.Second)
 })
 
 var _ = BeforeEach(func() {
