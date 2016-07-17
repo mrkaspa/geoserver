@@ -3,9 +3,10 @@ package test
 import (
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/mrkaspa/geoserver/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/net/websocket"
 )
 
 var _ = Describe("WS Behavior", func() {
@@ -18,34 +19,40 @@ var _ = Describe("WS Behavior", func() {
 		})
 
 		It("should do match", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
-			_, resp1, err1 := wsConnUser1.ReadMessage()
-			_, resp2, err2 := wsConnUser2.ReadMessage()
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+			resp1 := new(string)
+			resp2 := new(string)
+			err1 := websocket.Message.Receive(wsConnUser1, resp1)
+			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).To(BeNil())
-			Expect(string(resp1)).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
 			Expect(err2).To(BeNil())
-			Expect(string(resp2)).To(BeEquivalentTo(postStrokeUser1.Info))
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
 		})
 
 		It("should do match after 1 second", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
 			time.Sleep(1 * time.Second)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
-			_, resp1, err1 := wsConnUser1.ReadMessage()
-			_, resp2, err2 := wsConnUser2.ReadMessage()
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+			resp1 := new(string)
+			resp2 := new(string)
+			err1 := websocket.Message.Receive(wsConnUser1, resp1)
+			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).To(BeNil())
-			Expect(string(resp1)).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
 			Expect(err2).To(BeNil())
-			Expect(string(resp2)).To(BeEquivalentTo(postStrokeUser1.Info))
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
 		})
 
 		It("should do not match", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
 			time.Sleep(3 * time.Second)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
-			_, _, err1 := wsConnUser1.ReadMessage()
-			_, _, err2 := wsConnUser2.ReadMessage()
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+			resp1 := new(string)
+			resp2 := new(string)
+			err1 := websocket.Message.Receive(wsConnUser1, resp1)
+			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).NotTo(BeNil())
 			Expect(err2).NotTo(BeNil())
 		})
@@ -60,11 +67,13 @@ var _ = Describe("WS Behavior", func() {
 		})
 
 		It("should do not match", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
 			time.Sleep(3 * time.Second)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
-			_, _, err1 := wsConnUser1.ReadMessage()
-			_, _, err2 := wsConnUser2.ReadMessage()
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+			resp1 := new(string)
+			resp2 := new(string)
+			err1 := websocket.Message.Receive(wsConnUser1, resp1)
+			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).NotTo(BeNil())
 			Expect(err2).NotTo(BeNil())
 		})
@@ -80,26 +89,32 @@ var _ = Describe("WS Behavior", func() {
 		})
 
 		It("should do match", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
-			wsConnUser3.WriteMessage(websocket.TextMessage, postStrokeUser3Byte)
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+			websocket.Message.Send(wsConnUser3, postStrokeUser3Byte)
+			utils.Log.Infof("matchOtherTwo a1")
 			matchOtherTwo(wsConnUser1, postStrokeUser2.Info, postStrokeUser3.Info)
+			utils.Log.Infof("matchOtherTwo a2")
 			matchOtherTwo(wsConnUser2, postStrokeUser1.Info, postStrokeUser3.Info)
+			utils.Log.Infof("matchOtherTwo a3")
 			matchOtherTwo(wsConnUser3, postStrokeUser2.Info, postStrokeUser1.Info)
 		})
 
 		It("a1 and a2 should match, a3 shouldn't match", func() {
-			wsConnUser1.WriteMessage(websocket.TextMessage, postStrokeUser1Byte)
-			wsConnUser2.WriteMessage(websocket.TextMessage, postStrokeUser2Byte)
+			websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
+			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
 			time.Sleep(3 * time.Second)
-			wsConnUser3.WriteMessage(websocket.TextMessage, postStrokeUser3Byte)
-			_, resp1, err1 := wsConnUser1.ReadMessage()
-			_, resp2, err2 := wsConnUser2.ReadMessage()
+			websocket.Message.Send(wsConnUser3, postStrokeUser3Byte)
+			resp1 := new(string)
+			resp2 := new(string)
+			resp3 := new(string)
+			err1 := websocket.Message.Receive(wsConnUser1, resp1)
+			err2 := websocket.Message.Receive(wsConnUser2, resp2)
+			err3 := websocket.Message.Receive(wsConnUser3, resp3)
 			Expect(err1).To(BeNil())
-			Expect(string(resp1)).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
 			Expect(err2).To(BeNil())
-			Expect(string(resp2)).To(BeEquivalentTo(postStrokeUser1.Info))
-			_, _, err3 := wsConnUser3.ReadMessage()
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
 			Expect(err3).NotTo(BeNil())
 		})
 

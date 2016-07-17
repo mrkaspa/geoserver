@@ -1,6 +1,6 @@
 package test
 
-import "github.com/gorilla/websocket"
+import "golang.org/x/net/websocket"
 
 var (
 	username1           = "a1"

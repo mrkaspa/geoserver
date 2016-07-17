@@ -7,7 +7,7 @@ import (
 
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
-	router.HandleFunc("/ws/{username}", ws.ServeWS)
+	router.HandleFunc("/ws/{username}", ws.Adapter)
 	router.HandleFunc("/near", nearHandler).Methods("GET")
 	return router
 }

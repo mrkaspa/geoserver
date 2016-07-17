@@ -2,31 +2,11 @@ package ws
 
 import (
 	"encoding/json"
-	"net/http"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/mrkaspa/geoserver/utils"
+	"golang.org/x/net/websocket"
 )
-
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-	// Maximum message size allowed from peer.
-	maxMessageSize = 512
-)
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 // connection is an middleman between the websocket connection and the hub.
 type connection struct {
@@ -56,45 +36,23 @@ func createConnection(name string, ws *websocket.Conn) *connection {
 
 // readPump pumps messages from the websocket connection to the hub.
 func (c *connection) readPump() {
-	defer func() {
-		if c.actorRef != nil {
-			c.actorRef.removeConnection <- c
-		}
-		c.ws.Close()
-	}()
-
-	c.ws.SetReadLimit(maxMessageSize)
-	c.ws.SetReadDeadline(time.Now().Add(pongWait))
-	c.ws.SetPongHandler(func(string) error {
-		c.ws.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
-
 	for {
-		_, message, err := c.ws.ReadMessage()
-		if err != nil {
+		var message []byte
+
+		if err := websocket.Message.Receive(c.ws, &message); err != nil {
+			utils.Log.Infof("Can't receive")
 			break
 		}
+
+		utils.Log.Infof("Message recived (%s)", string(message))
 		c.receive <- message // sends to processMessages
 	}
 }
 
 // writePump pumps messages from the hub to the websocket connection.
 func (c *connection) writePump() {
-	ticker := time.NewTicker(pingPeriod)
-
-	defer func() {
-		utils.Log.Infof("Finishing connection: %s", c.name)
-		ticker.Stop()
-		c.ws.Close()
-	}()
-
 	for {
 		select {
-		case <-ticker.C:
-			if err := c.write(websocket.PingMessage, []byte{}); err != nil {
-				return
-			}
 		case <-c.poisonPill:
 			if len(c.send) == 0 {
 				c.die()
@@ -103,9 +61,10 @@ func (c *connection) writePump() {
 			go c.dieLater()
 		case message := <-c.send:
 			// channel used to finish the connection when it's closed
-			utils.Log.Infof("Into send channel for: %s, message: %s", c.name, string(message))
-			if err := c.write(websocket.TextMessage, message); err != nil {
-				return
+			utils.Log.Infof("Writing (%s) to the connection: %s", string(message), c.name)
+			if err := websocket.Message.Send(c.ws, message); err != nil {
+				utils.Log.Infof("Can't send")
+				break
 			}
 		}
 	}
@@ -123,8 +82,7 @@ func (c *connection) processMessage(message []byte) {
 		name:     c.name,
 		response: make(chan *actor),
 	}
-	utils.Log.Infof("Creating actor: %s", register.name)
-	searcherVar.register <- &register
+	SearcherVar.register <- &register
 	actorRef := <-register.response
 	actorRef.addConnection <- c
 	//creates the postStroke
@@ -138,12 +96,6 @@ func (c *connection) processMessage(message []byte) {
 	}
 }
 
-// write writes a message with the given message type and payload.
-func (c *connection) write(mt int, payload []byte) error {
-	c.ws.SetWriteDeadline(time.Now().Add(writeWait))
-	return c.ws.WriteMessage(mt, payload)
-}
-
 func (c *connection) dieLater() {
 	timer := time.NewTimer(100 * time.Millisecond)
 	<-timer.C
@@ -152,5 +104,5 @@ func (c *connection) dieLater() {
 
 func (c *connection) die() {
 	utils.Log.Infof("Closing websocket: %s", c.name)
-	c.write(websocket.CloseMessage, []byte{})
+	c.ws.Close()
 }

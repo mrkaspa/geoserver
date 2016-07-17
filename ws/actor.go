@@ -37,6 +37,7 @@ type actor struct {
 
 // inits an actor
 func createActor(name string) *actor {
+	utils.Log.Infof("Creating actor: %s", name)
 	return &actor{
 		name:             name,
 		status:           alive,
@@ -63,6 +64,7 @@ func (a *actor) run() {
 			a.die()
 			return
 		case conn := <-a.addConnection:
+			utils.Log.Infof("adding connection: %s to: %s - len before add: %d", conn.name, a.name, len(a.connections))
 			a.connections = append(a.connections, conn)
 		case conn := <-a.removeConnection:
 			a.removeConnectionBy(conn)
@@ -74,7 +76,7 @@ func (a *actor) run() {
 					name:     u,
 					response: make(chan *actor),
 				}
-				searcherVar.search <- &searchActorVar
+				SearcherVar.search <- &searchActorVar
 				actorRef := <-searchActorVar.response
 				actorRef.ping <- a
 				a.matchedActors[actorRef] = false
@@ -157,7 +159,8 @@ func (a *actor) die() {
 		for _, conn := range a.connections {
 			utils.Log.Infof("Closing connection: %s", conn.name)
 			conn.poisonPill <- true
+			a.removeConnection <- conn
 		}
-		searcherVar.unregister <- a.name
+		SearcherVar.unregister <- a.name
 	}
 }

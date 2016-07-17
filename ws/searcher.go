@@ -7,10 +7,11 @@ type searcher struct {
 	search     chan *searchActor
 	register   chan *registerActor
 	unregister chan string
+	Clean      chan bool
 }
 
 // Searcher for the actors on the system
-var searcherVar *searcher
+var SearcherVar *searcher
 
 // Run the searcher
 func (s *searcher) Run() {
@@ -29,6 +30,8 @@ func (s *searcher) Run() {
 				s.directory[register.name] = actorRef
 				go actorRef.run()
 				go actorRef.startTimer()
+			} else {
+				utils.Log.Infof("Actor found: %s", register.name)
 			}
 			register.response <- actorRef
 			close(register.response)
@@ -36,6 +39,8 @@ func (s *searcher) Run() {
 			if _, ok := s.directory[username]; ok {
 				delete(s.directory, username)
 			}
+		case <-s.Clean:
+			s.directory = make(map[string]*actor)
 		}
 	}
 }

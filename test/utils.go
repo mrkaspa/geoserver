@@ -3,9 +3,8 @@ package test
 import (
 	"encoding/json"
 
-	"github.com/gorilla/websocket"
-
 	. "github.com/onsi/gomega"
+	"golang.org/x/net/websocket"
 )
 
 type postStroke struct {
@@ -32,12 +31,14 @@ func BeIn(arr []interface{}, val interface{}) bool {
 }
 
 func matchOtherTwo(wsConn *websocket.Conn, infoA, infoB string) {
-	_, resp12, err12 := wsConn.ReadMessage()
-	_, resp13, err13 := wsConn.ReadMessage()
+	resp12 := new(string)
+	resp13 := new(string)
+	err12 := websocket.Message.Receive(wsConn, resp12)
+	err13 := websocket.Message.Receive(wsConn, resp13)
 	posibilities := []interface{}{infoA, infoB}
 	Expect(err12).To(BeNil())
 	Expect(err13).To(BeNil())
-	Expect(string(resp12)).NotTo(BeEquivalentTo(string(resp13)))
-	Expect(BeIn(posibilities, string(resp12))).To(BeTrue())
-	Expect(BeIn(posibilities, string(resp13))).To(BeTrue())
+	Expect(*resp12).NotTo(BeEquivalentTo(resp13))
+	Expect(BeIn(posibilities, *resp12)).To(BeTrue())
+	Expect(BeIn(posibilities, *resp13)).To(BeTrue())
 }

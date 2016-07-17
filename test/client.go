@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/gorilla/websocket"
+	"golang.org/x/net/websocket"
 )
 
 func createClient(urlString, username string) *websocket.Conn {
@@ -12,11 +12,10 @@ func createClient(urlString, username string) *websocket.Conn {
 	if err != nil {
 		panic("malformed url")
 	}
-	dialer := websocket.Dialer{}
 	newURL := fmt.Sprintf("ws://%s/ws/%s", url.Host, username)
-	conn, _, err := dialer.Dial(newURL, nil)
+	conn, err := websocket.Dial(newURL, "", urlString)
 	if err != nil {
-		panic("client couln't be opened")
+		panic(err.Error())
 	}
 	return conn
 }
