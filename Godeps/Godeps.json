@@ -19,11 +19,6 @@
 			"Rev": "9fa818a44c2bf1396a17f9d5a3c0f6dd39d2ff8e"
 		},
 		{
-			"ImportPath": "github.com/gorilla/websocket",
-			"Comment": "v1.0.0-17-ga836c37",
-			"Rev": "a836c37014dbbf0d1e871d04531b851fcbdeb22d"
-		},
-		{
 			"ImportPath": "github.com/joho/godotenv",
 			"Comment": "v1-10-g4ed1339",
 			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
@@ -32,6 +27,10 @@
 			"ImportPath": "github.com/rifflock/lfshook",
 			"Comment": "v1.0",
 			"Rev": "05a24e24fa8d3a2eca8c2baf23aa2d5a2c51490c"
+		},
+		{
+			"ImportPath": "golang.org/x/net/websocket",
+			"Rev": "d9558e5c97f85372afee28cf2b6059d7d3818919"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
