@@ -3,11 +3,27 @@ package test
 import (
 	"time"
 
+	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 	"github.com/mrkaspa/geoserver/ws"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/websocket"
+)
+
+var (
+	username1           = "a1"
+	wsConnUser1         *websocket.Conn
+	postStrokeUser1Byte []byte
+	postStrokeUser1     *models.StrokeNear
+	username2           = "a2"
+	wsConnUser2         *websocket.Conn
+	postStrokeUser2Byte []byte
+	postStrokeUser2     *models.StrokeNear
+	username3           = "a3"
+	wsConnUser3         *websocket.Conn
+	postStrokeUser3Byte []byte
+	postStrokeUser3     *models.StrokeNear
 )
 
 var _ = Describe("WS Behavior", func() {
@@ -34,8 +50,8 @@ var _ = Describe("WS Behavior", func() {
 	Context("with two users", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-79.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStrokeNear(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStrokeNear(username2, []float64{-79.38066843, 43.65483486})
 		})
 
 		It("should do match", func() {
@@ -46,9 +62,9 @@ var _ = Describe("WS Behavior", func() {
 			err1 := websocket.Message.Receive(wsConnUser1, resp1)
 			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).To(BeNil())
-			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Stroke.Info))
 			Expect(err2).To(BeNil())
-			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Stroke.Info))
 		})
 
 		It("should do match after 1 second", func() {
@@ -60,9 +76,9 @@ var _ = Describe("WS Behavior", func() {
 			err1 := websocket.Message.Receive(wsConnUser1, resp1)
 			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			Expect(err1).To(BeNil())
-			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Stroke.Info))
 			Expect(err2).To(BeNil())
-			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Stroke.Info))
 		})
 
 		It("should do not match", func() {
@@ -82,8 +98,8 @@ var _ = Describe("WS Behavior", func() {
 	Context("with two users far away", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-49.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStrokeNear(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStrokeNear(username2, []float64{-49.38066843, 43.65483486})
 		})
 
 		It("should do not match", func() {
@@ -103,9 +119,9 @@ var _ = Describe("WS Behavior", func() {
 	Context("with three users", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-79.38066843, 43.65483486})
-			postStrokeUser3, postStrokeUser3Byte = createStroke(username3, []float64{-79.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStrokeNear(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStrokeNear(username2, []float64{-79.38066843, 43.65483486})
+			postStrokeUser3, postStrokeUser3Byte = createStrokeNear(username3, []float64{-79.38066843, 43.65483486})
 		})
 
 		It("should do match", func() {
@@ -113,11 +129,11 @@ var _ = Describe("WS Behavior", func() {
 			websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
 			websocket.Message.Send(wsConnUser3, postStrokeUser3Byte)
 			utils.Log.Infof("matchOtherTwo a1")
-			matchOtherTwo(wsConnUser1, postStrokeUser2.Info, postStrokeUser3.Info)
+			matchOtherTwo(wsConnUser1, postStrokeUser2.Stroke.Info, postStrokeUser3.Stroke.Info)
 			utils.Log.Infof("matchOtherTwo a2")
-			matchOtherTwo(wsConnUser2, postStrokeUser1.Info, postStrokeUser3.Info)
+			matchOtherTwo(wsConnUser2, postStrokeUser1.Stroke.Info, postStrokeUser3.Stroke.Info)
 			utils.Log.Infof("matchOtherTwo a3")
-			matchOtherTwo(wsConnUser3, postStrokeUser2.Info, postStrokeUser1.Info)
+			matchOtherTwo(wsConnUser3, postStrokeUser2.Stroke.Info, postStrokeUser1.Stroke.Info)
 		})
 
 		It("a1 and a2 should match, a3 shouldn't match", func() {
@@ -132,9 +148,9 @@ var _ = Describe("WS Behavior", func() {
 			err2 := websocket.Message.Receive(wsConnUser2, resp2)
 			err3 := websocket.Message.Receive(wsConnUser3, resp3)
 			Expect(err1).To(BeNil())
-			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Info))
+			Expect(*resp1).To(BeEquivalentTo(postStrokeUser2.Stroke.Info))
 			Expect(err2).To(BeNil())
-			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Info))
+			Expect(*resp2).To(BeEquivalentTo(postStrokeUser1.Stroke.Info))
 			Expect(err3).NotTo(BeNil())
 		})
 

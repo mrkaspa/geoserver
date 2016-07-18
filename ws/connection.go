@@ -87,10 +87,10 @@ func (c *connection) processMessage(message []byte) {
 	actorRef := <-register.response
 	actorRef.addConnection <- c
 	//creates the postStroke
-	strokeVar := new(models.Stroke)
-	json.Unmarshal(message, strokeVar)
-	strokeVar.UserID = actorRef.name
-	actorRef.strokes <- strokeVar
+	var strokeNear models.StrokeNear
+	json.Unmarshal(message, &strokeNear)
+	strokeNear.Stroke.UserID = actorRef.name
+	actorRef.strokesNear <- &strokeNear
 	for response := range actorRef.responses {
 		// expects all the responses from the actor until it dies
 		c.send <- response

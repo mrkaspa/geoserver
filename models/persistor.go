@@ -7,15 +7,9 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const (
-	// max distance for the query in meters
-	maxDistance = 5
-	// seconds range to do match
-	secondsRange = 3
-)
-
+// Persistor takes care of persisting strokes and finding near ones
 type Persistor struct {
-	PersistAndFind chan *Stroke
+	PersistAndFind chan *StrokeNear
 	Persist        chan *Stroke
 	UsersFound     chan []Stroke
 	Saved          chan bool
@@ -23,7 +17,7 @@ type Persistor struct {
 
 func NewPersistor() *Persistor {
 	persistor := &Persistor{
-		PersistAndFind: make(chan *Stroke, 1),
+		PersistAndFind: make(chan *StrokeNear, 1),
 		Persist:        make(chan *Stroke, 1),
 		UsersFound:     make(chan []Stroke, 1),
 		Saved:          make(chan bool, 1),
@@ -39,55 +33,62 @@ func (p *Persistor) run() {
 	select {
 	case stroke := <-p.Persist:
 		utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
-		if err := p.save(stroke); err != nil {
-			p.Saved <- false
-			return
+		p.save(stroke)
+	case strokeNear := <-p.PersistAndFind:
+		utils.Log.Infof("Persistor executing PersistAndFind: %s", strokeNear)
+		if p.save(&strokeNear.Stroke) {
+			nearUsers, err := p.findNear(strokeNear)
+			if err != nil {
+				panic(err)
+			}
+			p.UsersFound <- nearUsers
 		}
-		p.Saved <- true
-	case stroke := <-p.PersistAndFind:
-		utils.Log.Infof("Persistor executing PersistAndFind: %s", stroke.UserID)
-		if err := p.save(stroke); err != nil {
-			p.Saved <- false
-			return
-		}
-		p.Saved <- true
-		nearUsers, err := p.findNear(stroke)
-		if err != nil {
-			panic(err)
-		}
-		p.UsersFound <- nearUsers
 	}
 }
 
-func (p *Persistor) save(stroke *Stroke) error {
+func (p *Persistor) save(stroke *Stroke) bool {
 	stroke.CreatedAt = time.Now()
 	utils.Log.Infof("Persisting %s stroke: %v", stroke.UserID, stroke)
-	return StrokesCollection.Insert(stroke)
+	err := StrokesCollection.Insert(stroke)
+	if err != nil {
+		p.Saved <- false
+		return false
+	}
+	p.Saved <- true
+	return true
 }
 
-func (p *Persistor) findNear(stroke *Stroke) ([]Stroke, error) {
+func (p *Persistor) findNear(strokeNear *StrokeNear) ([]Stroke, error) {
 	results := []Stroke{}
+	query := buildQuery(strokeNear)
+	err := StrokesCollection.Find(query).All(&results)
+	utils.Log.Infof("Query executed by %s: %v", strokeNear.Stroke.UserID, query)
+	utils.Log.Infof("Actor %s found matches %d", strokeNear.Stroke.UserID, len(results))
+	return results, err
+}
+
+func buildQuery(strokeNear *StrokeNear) bson.M {
 	query := bson.M{
 		"location": bson.M{
 			"$nearSphere": bson.M{
 				"$geometry": bson.M{
 					"type":        "Point",
-					"coordinates": stroke.Location,
+					"coordinates": strokeNear.Stroke.Location,
 				},
-				"$maxDistance": maxDistance,
+				"$maxDistance": strokeNear.MaxDistance,
 			},
 		},
 		"user_id": bson.M{
-			"$ne": stroke.UserID,
-		},
-		"created_at": bson.M{
-			"$gte": time.Now().Add(-1 * secondsRange * time.Second),
-			"$lte": time.Now().Add(secondsRange * time.Second),
+			"$ne": strokeNear.Stroke.UserID,
 		},
 	}
-	err := StrokesCollection.Find(query).All(&results)
-	utils.Log.Infof("Query executed by %s: %v", stroke.UserID, query)
-	utils.Log.Infof("Actor %s found matches %d", stroke.UserID, len(results))
 
-	return results, err
+	if strokeNear.TimeRange > 0 {
+		query["created_at"] = bson.M{
+			"$gte": time.Now().Add(-1 * time.Duration(strokeNear.TimeRange) * time.Second),
+			"$lte": time.Now(),
+		}
+	}
+
+	return query
 }

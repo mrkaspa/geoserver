@@ -28,7 +28,7 @@ type actor struct {
 	sentActors       map[*actor]bool
 	addConnection    chan *connection
 	removeConnection chan *connection
-	strokes          chan *models.Stroke
+	strokesNear      chan *models.StrokeNear
 	nearUsers        chan []models.Stroke
 	responses        chan []byte
 	ping             chan *actor
@@ -47,7 +47,7 @@ func newActor(name string) *actor {
 		removeConnection: make(chan *connection),
 		matchedActors:    make(map[*actor]bool),
 		sentActors:       make(map[*actor]bool),
-		strokes:          make(chan *models.Stroke),
+		strokesNear:      make(chan *models.StrokeNear),
 		responses:        make(chan []byte),
 		nearUsers:        make(chan []models.Stroke, 256),
 		ping:             make(chan *actor, 256),
@@ -69,7 +69,7 @@ func (a *actor) run() {
 			a.connections = append(a.connections, conn)
 		case conn := <-a.removeConnection:
 			a.removeConnectionBy(conn)
-		case strokeVar := <-a.strokes:
+		case strokeVar := <-a.strokesNear:
 			a.persist(strokeVar)
 		case users := <-a.nearUsers:
 			for _, u := range users {
@@ -107,11 +107,11 @@ func (a *actor) startTimer() {
 }
 
 // sends the persist message
-func (a *actor) persist(strokeVar *models.Stroke) {
-	persistorVar := models.NewPersistor()
-	persistorVar.UsersFound = a.nearUsers
-	a.info = []byte(strokeVar.Info)
-	persistorVar.PersistAndFind <- strokeVar
+func (a *actor) persist(strokeNear *models.StrokeNear) {
+	persistor := models.NewPersistor()
+	persistor.UsersFound = a.nearUsers
+	a.info = []byte(strokeNear.Stroke.Info)
+	persistor.PersistAndFind <- strokeNear
 }
 
 // sends data to all connectios

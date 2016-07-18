@@ -9,15 +9,15 @@ import (
 )
 
 func nearHandler(w http.ResponseWriter, r *http.Request) {
-	stroke := new(models.Stroke)
-	utils.Log.Infof("/near: %v", stroke)
-	err := json.NewDecoder(r.Body).Decode(stroke)
+	strokeNear := new(models.StrokeNear)
+	utils.Log.Infof("/near: %v", strokeNear)
+	err := json.NewDecoder(r.Body).Decode(strokeNear)
 	if err != nil {
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
 	persistor := models.NewPersistor()
-	persistor.PersistAndFind <- stroke
+	persistor.PersistAndFind <- strokeNear
 	saved := <-persistor.Saved
 	nearUsers := <-persistor.UsersFound
 	if !saved {
