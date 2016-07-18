@@ -13,14 +13,13 @@ import (
 
 var _ = Describe("/near", func() {
 
-	FIt("should get OK", func() {
+	It("should get OK", func() {
 		_, data := createStroke("a1", []float64{-79.38066843, 43.65483486})
-		res, _ :=
-			http.Post(ts.URL+"/store", "application/json; charset=utf-8", bytes.NewBuffer(data))
-		Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
+		http.Post(ts.URL+"/store", "application/json; charset=utf-8", bytes.NewBuffer(data))
+		http.Post(ts.URL+"/store", "application/json; charset=utf-8", bytes.NewBuffer(data))
 
 		_, data = createStroke("a2", []float64{-79.38066843, 43.65483486})
-		res, _ =
+		res, _ :=
 			http.Post(ts.URL+"/near", "application/json; charset=utf-8", bytes.NewBuffer(data))
 		Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
 
