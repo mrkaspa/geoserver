@@ -3,12 +3,20 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/mrkaspa/geoserver/utils"
 )
 
-func sendJSON(w http.ResponseWriter, data interface{}) {
+func sendOkJSON(w http.ResponseWriter, data interface{}) {
+	sendJSONWithStatus(w, data, http.StatusOK)
+}
+
+func sendJSONWithStatus(w http.ResponseWriter, data interface{}, code int) {
+	utils.Log.Infof("Response %d = %v", code, data)
+	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

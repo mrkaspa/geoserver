@@ -21,18 +21,12 @@ type Persistor struct {
 	Saved          chan bool
 }
 
-func NewPersistor(usersFound chan []Stroke, saved chan bool) *Persistor {
-	if usersFound == nil {
-		usersFound = make(chan []Stroke, 1)
-	}
-	if saved == nil {
-		saved = make(chan bool, 1)
-	}
+func NewPersistor() *Persistor {
 	persistor := &Persistor{
 		PersistAndFind: make(chan *Stroke, 1),
 		Persist:        make(chan *Stroke, 1),
-		UsersFound:     usersFound,
-		Saved:          saved,
+		UsersFound:     make(chan []Stroke, 1),
+		Saved:          make(chan bool, 1),
 	}
 	go persistor.run()
 	return persistor
@@ -46,12 +40,14 @@ func (p *Persistor) run() {
 	case stroke := <-p.Persist:
 		utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
 		if err := p.save(stroke); err != nil {
+			p.Saved <- false
 			return
 		}
 		p.Saved <- true
 	case stroke := <-p.PersistAndFind:
 		utils.Log.Infof("Persistor executing PersistAndFind: %s", stroke.UserID)
 		if err := p.save(stroke); err != nil {
+			p.Saved <- false
 			return
 		}
 		p.Saved <- true

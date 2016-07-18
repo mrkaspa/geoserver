@@ -8,9 +8,10 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func createPostStroke(info string, loc []float64) (*models.Stroke, []byte) {
+func createStroke(userID string, loc []float64) (*models.Stroke, []byte) {
 	stroke := models.Stroke{
-		Info:     info,
+		UserID:   userID,
+		Info:     userID,
 		Location: loc,
 	}
 	json, _ := json.Marshal(&stroke)

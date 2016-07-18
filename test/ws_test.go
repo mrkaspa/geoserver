@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/mrkaspa/geoserver/utils"
+	"github.com/mrkaspa/geoserver/ws"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/websocket"
@@ -11,11 +12,30 @@ import (
 
 var _ = Describe("WS Behavior", func() {
 
+	BeforeEach(func() {
+		wsConnUser1 = createClient(ts.URL, username1)
+		wsConnUser2 = createClient(ts.URL, username2)
+		wsConnUser3 = createClient(ts.URL, username3)
+	})
+
+	AfterEach(func() {
+		if wsConnUser1.IsServerConn() {
+			wsConnUser1.Close()
+		}
+		if wsConnUser2.IsServerConn() {
+			wsConnUser2.Close()
+		}
+		if wsConnUser3.IsServerConn() {
+			wsConnUser3.Close()
+		}
+		ws.SearcherVar.Clean <- true
+	})
+
 	Context("with two users", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createPostStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createPostStroke(username2, []float64{-79.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-79.38066843, 43.65483486})
 		})
 
 		It("should do match", func() {
@@ -62,8 +82,8 @@ var _ = Describe("WS Behavior", func() {
 	Context("with two users far away", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createPostStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createPostStroke(username2, []float64{-49.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-49.38066843, 43.65483486})
 		})
 
 		It("should do not match", func() {
@@ -83,9 +103,9 @@ var _ = Describe("WS Behavior", func() {
 	Context("with three users", func() {
 
 		BeforeEach(func() {
-			postStrokeUser1, postStrokeUser1Byte = createPostStroke(username1, []float64{-79.38066843, 43.65483486})
-			postStrokeUser2, postStrokeUser2Byte = createPostStroke(username2, []float64{-79.38066843, 43.65483486})
-			postStrokeUser3, postStrokeUser3Byte = createPostStroke(username3, []float64{-79.38066843, 43.65483486})
+			postStrokeUser1, postStrokeUser1Byte = createStroke(username1, []float64{-79.38066843, 43.65483486})
+			postStrokeUser2, postStrokeUser2Byte = createStroke(username2, []float64{-79.38066843, 43.65483486})
+			postStrokeUser3, postStrokeUser3Byte = createStroke(username3, []float64{-79.38066843, 43.65483486})
 		})
 
 		It("should do match", func() {

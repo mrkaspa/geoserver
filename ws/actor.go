@@ -108,7 +108,8 @@ func (a *actor) startTimer() {
 
 // sends the persist message
 func (a *actor) persist(strokeVar *models.Stroke) {
-	persistorVar := models.NewPersistor(a.nearUsers, nil)
+	persistorVar := models.NewPersistor()
+	persistorVar.UsersFound = a.nearUsers
 	a.info = []byte(strokeVar.Info)
 	persistorVar.PersistAndFind <- strokeVar
 }
