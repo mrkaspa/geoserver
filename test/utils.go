@@ -3,21 +3,17 @@ package test
 import (
 	"encoding/json"
 
+	"github.com/mrkaspa/geoserver/models"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/websocket"
 )
 
-type postStroke struct {
-	Info string
-	Loc  []float64
-}
-
-func createPostStroke(info string, loc []float64) (*postStroke, []byte) {
-	stroke := postStroke{
-		Info: info,
-		Loc:  loc,
+func createPostStroke(info string, loc []float64) (*models.Stroke, []byte) {
+	stroke := models.Stroke{
+		Info:     info,
+		Location: loc,
 	}
-	json, _ := json.Marshal(stroke)
+	json, _ := json.Marshal(&stroke)
 	return &stroke, json
 }
 

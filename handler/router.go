@@ -8,6 +8,7 @@ import (
 func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/ws/{username}", ws.Adapter)
-	router.HandleFunc("/near", nearHandler).Methods("GET")
+	router.HandleFunc("/near/{username}", nearHandler).Methods("GET")
+	router.HandleFunc("/store", storeHandler).Methods("POST")
 	return router
 }

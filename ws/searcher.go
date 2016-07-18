@@ -26,7 +26,7 @@ func (s *searcher) Run() {
 			actorRef, ok := s.directory[register.name]
 			utils.Log.Infof("Looking for actor: %s --- %v", register.name, actorRef)
 			if !ok {
-				actorRef = createActor(register.name)
+				actorRef = newActor(register.name)
 				s.directory[register.name] = actorRef
 				go actorRef.run()
 				go actorRef.startTimer()

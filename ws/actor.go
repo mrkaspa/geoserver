@@ -3,6 +3,7 @@ package ws
 import (
 	"time"
 
+	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 )
 
@@ -27,8 +28,8 @@ type actor struct {
 	sentActors       map[*actor]bool
 	addConnection    chan *connection
 	removeConnection chan *connection
-	strokes          chan *postStroke
-	nearUsers        chan []string
+	strokes          chan *models.Stroke
+	nearUsers        chan []models.Stroke
 	responses        chan []byte
 	ping             chan *actor
 	pong             chan *actor
@@ -36,7 +37,7 @@ type actor struct {
 }
 
 // inits an actor
-func createActor(name string) *actor {
+func newActor(name string) *actor {
 	utils.Log.Infof("Creating actor: %s", name)
 	return &actor{
 		name:             name,
@@ -46,9 +47,9 @@ func createActor(name string) *actor {
 		removeConnection: make(chan *connection),
 		matchedActors:    make(map[*actor]bool),
 		sentActors:       make(map[*actor]bool),
-		strokes:          make(chan *postStroke),
+		strokes:          make(chan *models.Stroke),
 		responses:        make(chan []byte),
-		nearUsers:        make(chan []string, 256),
+		nearUsers:        make(chan []models.Stroke, 256),
 		ping:             make(chan *actor, 256),
 		pong:             make(chan *actor, 256),
 		poisonPill:       make(chan bool, 1),
@@ -68,12 +69,12 @@ func (a *actor) run() {
 			a.connections = append(a.connections, conn)
 		case conn := <-a.removeConnection:
 			a.removeConnectionBy(conn)
-		case postStrokeVar := <-a.strokes:
-			a.persist(postStrokeVar)
+		case strokeVar := <-a.strokes:
+			a.persist(strokeVar)
 		case users := <-a.nearUsers:
 			for _, u := range users {
 				searchActorVar := searchActor{
-					name:     u,
+					name:     u.UserID,
 					response: make(chan *actor),
 				}
 				SearcherVar.search <- &searchActorVar
@@ -106,14 +107,10 @@ func (a *actor) startTimer() {
 }
 
 // sends the persist message
-func (a *actor) persist(postStrokeVar *postStroke) {
-	persistorVar := persistor{
-		persist:  make(chan *postStroke),
-		response: a.nearUsers,
-	}
-	a.info = []byte(postStrokeVar.Info)
-	go persistorVar.run()
-	persistorVar.persist <- postStrokeVar
+func (a *actor) persist(strokeVar *models.Stroke) {
+	persistorVar := models.NewPersistor(a.nearUsers, nil)
+	a.info = []byte(strokeVar.Info)
+	persistorVar.PersistAndFind <- strokeVar
 }
 
 // sends data to all connectios

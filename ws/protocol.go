@@ -9,9 +9,3 @@ type registerActor struct {
 	name     string
 	response chan *actor
 }
-
-type postStroke struct {
-	userID string
-	Info   string
-	Loc    []float64
-}

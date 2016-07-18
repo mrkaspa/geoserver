@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 	"golang.org/x/net/websocket"
 )
@@ -86,10 +87,10 @@ func (c *connection) processMessage(message []byte) {
 	actorRef := <-register.response
 	actorRef.addConnection <- c
 	//creates the postStroke
-	postStrokeVar := postStroke{}
-	json.Unmarshal(message, &postStrokeVar)
-	postStrokeVar.userID = actorRef.name
-	actorRef.strokes <- &postStrokeVar
+	strokeVar := new(models.Stroke)
+	json.Unmarshal(message, strokeVar)
+	strokeVar.UserID = actorRef.name
+	actorRef.strokes <- strokeVar
 	for response := range actorRef.responses {
 		// expects all the responses from the actor until it dies
 		c.send <- response
