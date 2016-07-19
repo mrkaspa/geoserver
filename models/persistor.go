@@ -27,9 +27,6 @@ func NewPersistor() *Persistor {
 }
 
 func (p *Persistor) run() {
-	defer close(p.Persist)
-	defer close(p.PersistAndFind)
-
 	select {
 	case stroke := <-p.Persist:
 		utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)

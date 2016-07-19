@@ -11,6 +11,11 @@ const defaultLifeTime = 3
 
 type actorStatus int
 
+type broadcastActor struct {
+	actor     *actor
+	recursive bool
+}
+
 const (
 	_                 = iota
 	alive actorStatus = 1
@@ -32,6 +37,7 @@ type actor struct {
 	strokesNear      chan *models.StrokeNear
 	nearUsers        chan []models.Stroke
 	responses        chan []byte
+	broadcast        chan *broadcastActor
 	ping             chan *actor
 	pong             chan *actor
 	poisonPill       chan bool
@@ -51,6 +57,7 @@ func newActor(name string) *actor {
 		sentActors:       make(map[*actor]bool),
 		strokesNear:      make(chan *models.StrokeNear),
 		responses:        make(chan []byte),
+		broadcast:        make(chan *broadcastActor, 256),
 		nearUsers:        make(chan []models.Stroke, 256),
 		ping:             make(chan *actor, 256),
 		pong:             make(chan *actor, 256),
@@ -91,7 +98,7 @@ func (a *actor) run() {
 			if _, ok := a.matchedActors[actorPing]; !ok {
 				utils.Log.Infof("%s received a PING from %s", a.name, actorPing.name)
 				a.matchedActors[actorPing] = false
-				a.broadcast(actorPing)
+				a.broadcast <- &broadcastActor{actorPing, true}
 				diffTime := actorPing.lifeTime.Sub(a.lifeTime)
 				a.dieLater(int(diffTime.Seconds()))
 				actorPing.pong <- a
@@ -99,7 +106,16 @@ func (a *actor) run() {
 		case actorPong := <-a.pong:
 			utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
 			a.matchedActors[actorPong] = true
-			a.broadcast(actorPong)
+			a.broadcast <- &broadcastActor{actorPong, true}
+		case actorToSend := <-a.broadcast:
+			a.sendBroadcast(actorToSend.actor)
+			if actorToSend.recursive {
+				for actorPonged, ponged := range a.matchedActors {
+					if ponged && actorPonged.name != actorToSend.actor.name {
+						actorPonged.broadcast <- &broadcastActor{actorToSend.actor, false}
+					}
+				}
+			}
 		}
 	}
 }
@@ -133,7 +149,7 @@ func (a *actor) persist(strokeNear *models.StrokeNear) {
 }
 
 // sends data to all connectios
-func (a *actor) broadcast(actorMatched *actor) {
+func (a *actor) sendBroadcast(actorMatched *actor) {
 	ok := a.sentActors[actorMatched]
 	sent := false
 	if !ok {

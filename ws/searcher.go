@@ -20,7 +20,6 @@ func (s *searcher) Run() {
 		case search := <-s.search:
 			actorRef, _ := s.directory[search.name]
 			search.response <- actorRef
-			close(search.response)
 		case register := <-s.register:
 			// creates or find an actor
 			actorRef, ok := s.directory[register.name]
@@ -32,7 +31,6 @@ func (s *searcher) Run() {
 				utils.Log.Infof("Actor found: %s", register.name)
 			}
 			register.response <- actorRef
-			close(register.response)
 		case username := <-s.unregister:
 			if _, ok := s.directory[username]; ok {
 				delete(s.directory, username)
