@@ -28,8 +28,6 @@ func (s *searcher) Run() {
 			if !ok {
 				actorRef = newActor(register.name)
 				s.directory[register.name] = actorRef
-				go actorRef.run()
-				go actorRef.startTimer()
 			} else {
 				utils.Log.Infof("Actor found: %s", register.name)
 			}
