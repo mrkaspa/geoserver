@@ -5,7 +5,6 @@ import (
 
 	"github.com/mrkaspa/geoserver/models"
 	. "github.com/onsi/gomega"
-	"golang.org/x/net/websocket"
 )
 
 func createStrokeNear(userID string, loc []float64) (*models.StrokeNear, []byte) {
@@ -42,15 +41,11 @@ func BeIn(arr []interface{}, val interface{}) bool {
 	return false
 }
 
-func matchOtherTwo(wsConn *websocket.Conn, infoA, infoB string) {
-	resp12 := new(string)
-	resp13 := new(string)
-	err12 := websocket.Message.Receive(wsConn, resp12)
-	err13 := websocket.Message.Receive(wsConn, resp13)
+func matchTwo(err1, err2 error, resp1, resp2, infoA, infoB string) {
 	posibilities := []interface{}{infoA, infoB}
-	Expect(err12).To(BeNil())
-	Expect(err13).To(BeNil())
-	Expect(*resp12).NotTo(BeEquivalentTo(resp13))
-	Expect(BeIn(posibilities, *resp12)).To(BeTrue())
-	Expect(BeIn(posibilities, *resp13)).To(BeTrue())
+	Expect(err1).To(BeNil())
+	Expect(err2).To(BeNil())
+	Expect(resp1).NotTo(BeEquivalentTo(resp2))
+	Expect(BeIn(posibilities, resp1)).To(BeTrue())
+	Expect(BeIn(posibilities, resp1)).To(BeTrue())
 }

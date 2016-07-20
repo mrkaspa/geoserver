@@ -15,10 +15,16 @@ var SearcherVar *searcher
 
 // Run the searcher
 func (s *searcher) Run() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.Log.Infof("Recovered in SearcherVar.Run()")
+		}
+	}()
+
 	for {
 		select {
 		case search := <-s.search:
-			actorRef, _ := s.directory[search.name]
+			actorRef := s.directory[search.name]
 			search.response <- actorRef
 		case register := <-s.register:
 			// creates or find an actor

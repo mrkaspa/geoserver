@@ -52,6 +52,12 @@ func (c *connection) readPump() {
 
 // writePump pumps messages from the hub to the websocket connection.
 func (c *connection) writePump() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.Log.Infof("Recovered in connection.writePump()")
+		}
+	}()
+
 	for {
 		select {
 		case <-c.poisonPill:
@@ -72,6 +78,12 @@ func (c *connection) writePump() {
 }
 
 func (c *connection) processMessages() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.Log.Infof("Recovered in connection.processMessages()")
+		}
+	}()
+
 	for message := range c.receive {
 		c.processMessage(message)
 	}

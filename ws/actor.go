@@ -70,6 +70,12 @@ func newActor(name string) *actor {
 
 // run the actor that represents the user
 func (a *actor) run() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.Log.Infof("Recovered in %s.run()", a.name)
+		}
+	}()
+
 	utils.Log.Infof("Running actor: %s", a.name)
 	for {
 		select {
@@ -91,22 +97,26 @@ func (a *actor) run() {
 				}
 				SearcherVar.search <- &searchActorVar
 				actorRef := <-searchActorVar.response
-				actorRef.ping <- a
 				a.matchedActors[actorRef] = false
+				if actorRef != nil {
+					actorRef.ping <- a
+				}
 			}
 		case actorPing := <-a.ping:
-			if _, ok := a.matchedActors[actorPing]; !ok {
-				utils.Log.Infof("%s received a PING from %s", a.name, actorPing.name)
-				a.matchedActors[actorPing] = false
+			_, ok := a.matchedActors[actorPing]
+			utils.Log.Infof("%s received a PING from %s, ok: %t", a.name, actorPing.name, ok)
+			if !ok {
 				a.broadcast <- &broadcastActor{actorPing, true}
+				utils.Log.Infof("%s entered a PING from %s", a.name, actorPing.name)
+				a.matchedActors[actorPing] = false
 				diffTime := actorPing.lifeTime.Sub(a.lifeTime)
 				a.dieLater(int(diffTime.Seconds()))
 				actorPing.pong <- a
 			}
 		case actorPong := <-a.pong:
+			a.broadcast <- &broadcastActor{actorPong, true}
 			utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
 			a.matchedActors[actorPong] = true
-			a.broadcast <- &broadcastActor{actorPong, true}
 		case actorToSend := <-a.broadcast:
 			a.sendBroadcast(actorToSend.actor)
 			if actorToSend.recursive {
@@ -156,7 +166,7 @@ func (a *actor) sendBroadcast(actorMatched *actor) {
 		sent = true
 		a.sentActors[actorMatched] = true
 		for _, conn := range a.connections {
-			utils.Log.Infof("Sending to the connection %s the info %s of the actor %s", a.name, string(actorMatched.info), actorMatched.name)
+			utils.Log.Infof("SendingBC to the connection %s the info %s of the actor %s", a.name, string(actorMatched.info), actorMatched.name)
 			conn.send <- actorMatched.info
 		}
 	}

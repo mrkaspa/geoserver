@@ -27,6 +27,12 @@ func NewPersistor() *Persistor {
 }
 
 func (p *Persistor) run() {
+	defer func() {
+		if r := recover(); r != nil {
+			utils.Log.Infof("Recovered in persistor.Run()")
+		}
+	}()
+
 	select {
 	case stroke := <-p.Persist:
 		utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
