@@ -3,11 +3,13 @@ package ws
 import (
 	"time"
 
+	"math"
+
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 )
 
-const defaultLifeTime = 3
+const defaultLifeTime = 1
 
 type actorStatus int
 
@@ -100,6 +102,11 @@ func (a *actor) run() {
 				a.matchedActors[actorRef] = false
 				if actorRef != nil {
 					actorRef.ping <- a
+					for actorPonged, ponged := range actorRef.matchedActors {
+						if ponged {
+							actorPonged.ping <- a
+						}
+					}
 				}
 			}
 		case actorPing := <-a.ping:
@@ -110,7 +117,8 @@ func (a *actor) run() {
 				utils.Log.Infof("%s entered a PING from %s", a.name, actorPing.name)
 				a.matchedActors[actorPing] = false
 				diffTime := actorPing.lifeTime.Sub(a.lifeTime)
-				a.dieLater(int(diffTime.Seconds()))
+				moreTime := int(math.Ceil(diffTime.Seconds()))
+				a.dieLater(moreTime)
 				actorPing.pong <- a
 			}
 		case actorPong := <-a.pong:
@@ -142,6 +150,7 @@ func (a *actor) startTimer(seconds int) {
 func (a *actor) dieLater(seconds int) {
 	if seconds > 0 {
 		a.timer.Stop()
+		a.timer = nil
 		utils.Log.Infof("Actor %s die later %d", a.name, seconds)
 		go a.startTimer(seconds)
 	}
@@ -187,7 +196,7 @@ func (a *actor) removeConnectionBy(conn *connection) {
 func (a *actor) die() {
 	// kills the referenced actors
 	if a.status == alive {
-		utils.Log.Infof("Actor dying: %s -- with %d connections -- should die %v", a.name, len(a.connections), a.lifeTime)
+		utils.Log.Infof("Actor dying: %s -- with %d connections -- should die %v is dying %v", a.name, len(a.connections), a.lifeTime, time.Now())
 
 		a.status = dead
 

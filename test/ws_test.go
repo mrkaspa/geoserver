@@ -187,6 +187,16 @@ var _ = Describe("WS Behavior", func() {
 			matchTwo(err31, err32, resp31, resp32, postStrokeUser1.Stroke.Info, postStrokeUser2.Stroke.Info)
 		})
 
+		It("should do match after 1 - 2 seconds", func() {
+			withThreeUsers(2, 1)
+			utils.Log.Infof("matchOtherTwo a1")
+			matchTwo(err11, err12, resp11, resp12, postStrokeUser2.Stroke.Info, postStrokeUser3.Stroke.Info)
+			utils.Log.Infof("matchOtherTwo a2")
+			matchTwo(err21, err22, resp21, resp22, postStrokeUser1.Stroke.Info, postStrokeUser3.Stroke.Info)
+			utils.Log.Infof("matchOtherTwo a3")
+			matchTwo(err31, err32, resp31, resp32, postStrokeUser1.Stroke.Info, postStrokeUser2.Stroke.Info)
+		})
+
 		It("a1 and a2 should match, a3 shouldn't match", func() {
 			withThreeUsers(0, 4)
 			Expect((err11 == nil && err12 != nil) || (err11 != nil && err12 == nil)).To(BeTrue())
