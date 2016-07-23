@@ -92,67 +92,70 @@ func (a *actor) run() {
 		case strokeVar := <-a.strokesNear:
 			a.persist(strokeVar)
 		case users := <-a.nearUsers:
-			for _, u := range users {
-				searchActorVar := searchActor{
-					name:     u.UserID,
-					response: make(chan *actor),
-				}
-				SearcherVar.search <- &searchActorVar
-				actorRef := <-searchActorVar.response
-				a.matchedActors[actorRef] = false
-				if actorRef != nil {
-					actorRef.ping <- a
-					for actorPonged, ponged := range actorRef.matchedActors {
-						if ponged {
-							actorPonged.ping <- a
-						}
-					}
-				}
-			}
+			a.receivingNearUsers(users)
 		case actorPing := <-a.ping:
-			_, ok := a.matchedActors[actorPing]
-			utils.Log.Infof("%s received a PING from %s, ok: %t", a.name, actorPing.name, ok)
-			if !ok {
-				a.broadcast <- &broadcastActor{actorPing, true}
-				utils.Log.Infof("%s entered a PING from %s", a.name, actorPing.name)
-				a.matchedActors[actorPing] = false
-				diffTime := actorPing.lifeTime.Sub(a.lifeTime)
-				moreTime := int(math.Ceil(diffTime.Seconds()))
-				a.dieLater(moreTime)
-				actorPing.pong <- a
-			}
+			a.receivingPing(actorPing)
 		case actorPong := <-a.pong:
-			a.broadcast <- &broadcastActor{actorPong, true}
-			utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
-			a.matchedActors[actorPong] = true
+			a.receivingPong(actorPong)
 		case actorToSend := <-a.broadcast:
-			a.sendBroadcast(actorToSend.actor)
-			if actorToSend.recursive {
-				for actorPonged, ponged := range a.matchedActors {
-					if ponged && actorPonged.name != actorToSend.actor.name {
-						actorPonged.broadcast <- &broadcastActor{actorToSend.actor, false}
-					}
-				}
-			}
+			a.sendBroadcast(actorToSend)
 		}
 	}
 }
 
-// timeout to kill the actor started after the actor is registered
-func (a *actor) startTimer(seconds int) {
-	a.lifeTime = a.lifeTime.Add(time.Duration(seconds) * time.Second)
-	a.timer = time.NewTimer(time.Duration(seconds) * time.Second)
-	<-a.timer.C
-	a.poisonPill <- true
+func (a *actor) receivingNearUsers(users []models.Stroke) {
+	for _, u := range users {
+		searchActorVar := searchActor{
+			name:     u.UserID,
+			response: make(chan *actor),
+		}
+		SearcherVar.search <- &searchActorVar
+		actorRef := <-searchActorVar.response
+		a.matchedActors[actorRef] = false
+		if actorRef != nil {
+			actorRef.ping <- a
+		}
+	}
 }
 
-// postpones death
-func (a *actor) dieLater(seconds int) {
-	if seconds > 0 {
-		a.timer.Stop()
-		a.timer = nil
-		utils.Log.Infof("Actor %s die later %d", a.name, seconds)
-		go a.startTimer(seconds)
+func (a *actor) receivingPing(actorPing *actor) {
+	a.broadcast <- &broadcastActor{actorPing, true}
+	_, ok := a.matchedActors[actorPing]
+	utils.Log.Infof("%s received a PING from %s, ok: %t", a.name, actorPing.name, ok)
+	if !ok {
+		utils.Log.Infof("%s entered a PING from %s", a.name, actorPing.name)
+		a.matchedActors[actorPing] = false
+		diffTime := actorPing.lifeTime.Sub(a.lifeTime)
+		moreTime := int(math.Ceil(diffTime.Seconds()))
+		a.dieLater(moreTime)
+		actorPing.pong <- a
+	}
+}
+
+func (a *actor) receivingPong(actorPong *actor) {
+	utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
+	a.matchedActors[actorPong] = true
+	a.broadcast <- &broadcastActor{actorPong, true}
+}
+
+func (a *actor) sendBroadcast(actorToSend *broadcastActor) {
+	actorFound := actorToSend.actor
+	a.broadcastActor(actorFound)
+	utils.Log.Infof("sendBroadcast a: %s, actorFound: %s, recursive: %t", a.name, actorFound.name, actorToSend.recursive)
+	if actorToSend.recursive {
+		for actorPonged, ponged := range a.matchedActors {
+			if ponged && actorPonged != actorFound {
+				utils.Log.Infof("sendBroadcast a: %s, matchedActors: %s", a.name, actorPonged.name)
+				actorPonged.broadcast <- &broadcastActor{actorFound, false}
+			}
+		}
+		for actorPonged, ponged := range actorFound.matchedActors {
+			if ponged && actorPonged != a {
+				utils.Log.Infof("sendBroadcast actorFound: %s, matchedActors: %s", actorFound.name, actorPonged.name)
+				a.broadcastActor(actorPonged)
+				actorPonged.broadcast <- &broadcastActor{a, false}
+			}
+		}
 	}
 }
 
@@ -168,7 +171,7 @@ func (a *actor) persist(strokeNear *models.StrokeNear) {
 }
 
 // sends data to all connectios
-func (a *actor) sendBroadcast(actorMatched *actor) {
+func (a *actor) broadcastActor(actorMatched *actor) {
 	ok := a.sentActors[actorMatched]
 	sent := false
 	if !ok {
@@ -189,6 +192,24 @@ func (a *actor) removeConnectionBy(conn *connection) {
 			a.connections = append(a.connections[:i], a.connections[i+1:]...)
 			return
 		}
+	}
+}
+
+// timeout to kill the actor started after the actor is registered
+func (a *actor) startTimer(seconds int) {
+	a.lifeTime = a.lifeTime.Add(time.Duration(seconds) * time.Second)
+	a.timer = time.NewTimer(time.Duration(seconds) * time.Second)
+	<-a.timer.C
+	a.poisonPill <- true
+}
+
+// postpones death
+func (a *actor) dieLater(seconds int) {
+	if seconds > 0 {
+		a.timer.Stop()
+		a.timer = nil
+		utils.Log.Infof("Actor %s die later %d", a.name, seconds)
+		go a.startTimer(seconds)
 	}
 }
 

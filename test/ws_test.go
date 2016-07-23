@@ -199,6 +199,7 @@ var _ = Describe("WS Behavior", func() {
 
 		It("a1 and a2 should match, a3 shouldn't match", func() {
 			withThreeUsers(0, 4)
+			utils.Log.Infof("err11: %t, err12: %t, err21: %t, err22: %t", err11 == nil, err12 == nil, err21 == nil, err22 == nil)
 			Expect((err11 == nil && err12 != nil) || (err11 != nil && err12 == nil)).To(BeTrue())
 			Expect((err21 == nil && err22 != nil) || (err21 != nil && err22 == nil)).To(BeTrue())
 			Expect(err31).NotTo(BeNil())

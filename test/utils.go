@@ -47,5 +47,5 @@ func matchTwo(err1, err2 error, resp1, resp2, infoA, infoB string) {
 	Expect(err2).To(BeNil())
 	Expect(resp1).NotTo(BeEquivalentTo(resp2))
 	Expect(BeIn(posibilities, resp1)).To(BeTrue())
-	Expect(BeIn(posibilities, resp1)).To(BeTrue())
+	Expect(BeIn(posibilities, resp2)).To(BeTrue())
 }
