@@ -1,7 +1,6 @@
 package test
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -30,9 +29,7 @@ func Test(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	router := handler.NewRouter()
-	http.Handle("/", router)
-	ts = httptest.NewServer(router)
+	ts = httptest.NewServer(handler.NewRouter())
 })
 
 var _ = AfterSuite(func() {
