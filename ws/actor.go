@@ -32,12 +32,12 @@ type actor struct {
 	timer            *time.Timer
 	lifeTime         time.Time
 	connections      []*connection
+	persistor        models.Persistance
 	matchedActors    map[*actor]bool
 	sentActors       map[*actor]bool
 	addConnection    chan *connection
 	removeConnection chan *connection
 	strokesNear      chan *models.StrokeNear
-	nearUsers        chan []models.Stroke
 	responses        chan []byte
 	broadcast        chan *broadcastActor
 	ping             chan *actor
@@ -53,6 +53,7 @@ func newActor(name string) *actor {
 		status:           alive,
 		connections:      []*connection{},
 		lifeTime:         time.Now(),
+		persistor:        models.NewPersistor(),
 		addConnection:    make(chan *connection),
 		removeConnection: make(chan *connection),
 		matchedActors:    make(map[*actor]bool),
@@ -60,7 +61,6 @@ func newActor(name string) *actor {
 		strokesNear:      make(chan *models.StrokeNear),
 		responses:        make(chan []byte),
 		broadcast:        make(chan *broadcastActor, 256),
-		nearUsers:        make(chan []models.Stroke, 256),
 		ping:             make(chan *actor, 256),
 		pong:             make(chan *actor, 256),
 		poisonPill:       make(chan bool, 1),
@@ -91,7 +91,7 @@ func (a *actor) run() {
 			a.removeConnectionBy(conn)
 		case strokeVar := <-a.strokesNear:
 			a.persist(strokeVar)
-		case users := <-a.nearUsers:
+		case users := <-a.persistor.UsersFound():
 			a.receivingNearUsers(users)
 		case actorPing := <-a.ping:
 			a.receivingPing(actorPing)
@@ -161,11 +161,9 @@ func (a *actor) sendBroadcast(actorToSend *broadcastActor) {
 
 // sends the persist message
 func (a *actor) persist(strokeNear *models.StrokeNear) {
-	persistor := models.NewPersistor()
-	persistor.UsersFound = a.nearUsers
 	a.info = []byte(strokeNear.Stroke.Info)
-	persistor.PersistAndFind <- strokeNear
-	if <-persistor.Saved {
+	a.persistor.PersistAndFind() <- strokeNear
+	if <-a.persistor.Saved() {
 		go a.dieLater(strokeNear.TimeRange)
 	}
 }

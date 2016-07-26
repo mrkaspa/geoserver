@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/ws"
 	"github.com/urfave/negroni"
 )
@@ -15,9 +16,10 @@ type fakeRouter struct {
 func NewRouter() http.Handler {
 	n := negroni.Classic()
 	router := &fakeRouter{mux: mux.NewRouter()}
+	controller := &controller{persistor: models.NewPersistor()}
 	router.mux.HandleFunc("/ws/{username}", ws.Adapter)
-	router.mux.HandleFunc("/near", nearHandler).Methods("POST")
-	router.mux.HandleFunc("/store", storeHandler).Methods("POST")
+	router.mux.HandleFunc("/near", controller.nearHandler).Methods("POST")
+	router.mux.HandleFunc("/store", controller.storeHandler).Methods("POST")
 	n.Use(router)
 	return n
 }
