@@ -2,3 +2,4 @@
 .env_test
 .idea/
 log/
+geoserver

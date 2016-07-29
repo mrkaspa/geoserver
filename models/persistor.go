@@ -22,12 +22,12 @@ type Persistor struct {
 	saved          chan bool
 }
 
-func NewPersistor() Persistor {
+func NewPersistor() Persistance {
 	persistor := Persistor{
-		persistAndFind: make(chan *StrokeNear, 1),
-		persist:        make(chan *Stroke, 1),
-		usersFound:     make(chan []Stroke, 1),
-		saved:          make(chan bool, 1),
+		persistAndFind: make(chan *StrokeNear, 256),
+		persist:        make(chan *Stroke, 256),
+		usersFound:     make(chan []Stroke, 256),
+		saved:          make(chan bool, 256),
 	}
 	go persistor.run()
 	return persistor
@@ -49,7 +49,7 @@ func (p Persistor) Saved() chan bool {
 	return p.saved
 }
 
-func (p *Persistor) run() {
+func (p Persistor) run() {
 	defer func() {
 		if r := recover(); r != nil {
 			utils.Log.Infof("Recovered in persistor.Run()")
@@ -61,7 +61,7 @@ func (p *Persistor) run() {
 			utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
 			p.save(stroke)
 		case strokeNear := <-p.persistAndFind:
-			utils.Log.Infof("Persistor executing PersistAndFind: %s", strokeNear)
+			utils.Log.Infof("Persistor executing PersistAndFind: %v", strokeNear)
 			if p.save(&strokeNear.Stroke) {
 				nearUsers, err := p.findNear(strokeNear)
 				if err != nil {

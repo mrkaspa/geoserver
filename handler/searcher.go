@@ -1,17 +1,34 @@
-package ws
+package handler
 
-import "github.com/mrkaspa/geoserver/utils"
+import (
+	"github.com/mrkaspa/geoserver/models"
+	"github.com/mrkaspa/geoserver/utils"
+)
 
 type searcher struct {
-	directory  map[string]*actor
-	search     chan *searchActor
-	register   chan *registerActor
-	unregister chan string
-	Clean      chan bool
+	persistorCreator func() models.Persistance
+	directory        map[string]*actor
+	search           chan *searchActor
+	register         chan *registerActor
+	unregister       chan string
+	Clean            chan bool
 }
 
 // Searcher for the actors on the system
 var SearcherVar *searcher
+
+func InitSearcher(persistorCreator func() models.Persistance) {
+	// InitSearcher run it
+	SearcherVar = &searcher{
+		persistorCreator: persistorCreator,
+		directory:        make(map[string]*actor),
+		search:           make(chan *searchActor, 256),
+		register:         make(chan *registerActor, 256),
+		unregister:       make(chan string, 256),
+		Clean:            make(chan bool),
+	}
+	go SearcherVar.Run()
+}
 
 // Run the searcher
 func (s *searcher) Run() {
@@ -31,7 +48,7 @@ func (s *searcher) Run() {
 			actorRef, ok := s.directory[register.name]
 			utils.Log.Infof("Looking for actor: %s --- %v", register.name, actorRef)
 			if !ok {
-				actorRef = newActor(register.name)
+				actorRef = newActor(register.name, s.persistorCreator)
 				s.directory[register.name] = actorRef
 			} else {
 				utils.Log.Infof("Actor found: %s", register.name)

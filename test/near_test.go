@@ -20,12 +20,12 @@ var _ = Describe("/near", func() {
 		_, data2 := createStrokeNear("a2", []float64{-79.38066843, 43.65483486})
 		res, _ :=
 			http.Post(ts.URL+"/near", "application/json; charset=utf-8", bytes.NewBuffer(data2))
-		Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
+		Expect(res.StatusCode).To(Equal(http.StatusOK))
 
 		var strokes []models.Stroke
 		json.NewDecoder(res.Body).Decode(&strokes)
-		Expect(len(strokes)).To(BeEquivalentTo(1))
-		Expect(strokes[0].UserID).To(BeEquivalentTo("a1"))
+		Expect(len(strokes)).To(Equal(1))
+		Expect(strokes[0].UserID).To(Equal("a1"))
 	})
 
 })

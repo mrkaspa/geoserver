@@ -45,7 +45,7 @@ func matchTwo(err1, err2 error, resp1, resp2, infoA, infoB string) {
 	posibilities := []interface{}{infoA, infoB}
 	Expect(err1).To(BeNil())
 	Expect(err2).To(BeNil())
-	Expect(resp1).NotTo(BeEquivalentTo(resp2))
+	Expect(resp1).NotTo(Equal(resp2))
 	Expect(BeIn(posibilities, resp1)).To(BeTrue())
 	Expect(BeIn(posibilities, resp2)).To(BeTrue())
 }

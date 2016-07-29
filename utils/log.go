@@ -13,16 +13,18 @@ import (
 var Log *log.Logger
 
 //InitLog system
-func Init() {
-	log.SetOutput(os.Stderr)
-	log.SetLevel(log.WarnLevel)
-	Log = log.New()
-	Log.Formatter = new(log.JSONFormatter)
-	fmt.Printf("LOADED LOG %s", os.Getenv("MODE"))
-	if os.Getenv("MODE") != "test" {
-		Log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
-			log.InfoLevel:  "log/info.log",
-			log.ErrorLevel: "log/error.log",
-		}))
+func InitLogger() {
+	if Log == nil {
+		log.SetOutput(os.Stderr)
+		log.SetLevel(log.WarnLevel)
+		Log = log.New()
+		Log.Formatter = new(log.JSONFormatter)
+		fmt.Printf("LOADED LOG %s", os.Getenv("MODE"))
+		if os.Getenv("MODE") == "production" {
+			Log.Hooks.Add(lfshook.NewHook(lfshook.PathMap{
+				log.InfoLevel:  "log/info.log",
+				log.ErrorLevel: "log/error.log",
+			}))
+		}
 	}
 }

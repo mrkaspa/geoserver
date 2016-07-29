@@ -1,4 +1,4 @@
-package ws
+package handler
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-func Adapter(w http.ResponseWriter, req *http.Request) {
+func adapter(w http.ResponseWriter, req *http.Request) {
 	s := websocket.Server{Handler: websocket.Handler(handler)}
 	s.ServeHTTP(w, req)
 }

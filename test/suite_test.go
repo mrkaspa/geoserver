@@ -14,7 +14,6 @@ import (
 
 	"fmt"
 
-	"github.com/joho/godotenv"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,12 +22,16 @@ var (
 	ts *httptest.Server
 )
 
-func Test(t *testing.T) {
+func TestBlackBox(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Api WS")
 }
 
 var _ = BeforeSuite(func() {
+	utils.LoadEnv("../.env_test")
+	utils.InitLogger()
+	models.InitDB()
+	handler.InitSearcher(models.NewPersistor)
 	ts = httptest.NewServer(handler.NewRouter())
 })
 
@@ -49,21 +52,4 @@ var _ = AfterEach(func() {
 
 func cleanDB() {
 	models.StrokesCollection.RemoveAll(bson.M{})
-}
-
-func init() {
-	path := ".env_test"
-	for i := 1; ; i++ {
-		if err := godotenv.Load(path); err != nil {
-			if i > 3 {
-				panic("Error loading .env_test file")
-			} else {
-				path = "../" + path
-			}
-		} else {
-			break
-		}
-	}
-	utils.Init()
-	models.Init()
 }

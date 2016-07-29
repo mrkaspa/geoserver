@@ -1,4 +1,4 @@
-package ws
+package handler
 
 import (
 	"time"
@@ -46,14 +46,14 @@ type actor struct {
 }
 
 // inits an actor
-func newActor(name string) *actor {
+func newActor(name string, persistorCreator func() models.Persistance) *actor {
 	utils.Log.Infof("Creating actor: %s", name)
 	actor := &actor{
 		name:             name,
 		status:           alive,
 		connections:      []*connection{},
 		lifeTime:         time.Now(),
-		persistor:        models.NewPersistor(),
+		persistor:        persistorCreator(),
 		addConnection:    make(chan *connection),
 		removeConnection: make(chan *connection),
 		matchedActors:    make(map[*actor]bool),

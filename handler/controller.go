@@ -9,10 +9,10 @@ import (
 )
 
 type controller struct {
-	persistor models.Persistance
+	persistorCreator func() models.Persistance
 }
 
-func (c *controller) nearHandler(w http.ResponseWriter, r *http.Request) {
+func (c controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 	strokeNear := new(models.StrokeNear)
 	utils.Log.Infof("/near: %v", strokeNear)
 	err := json.NewDecoder(r.Body).Decode(strokeNear)
@@ -20,9 +20,10 @@ func (c *controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
-	c.persistor.PersistAndFind() <- strokeNear
-	saved := <-c.persistor.Saved()
-	nearUsers := <-c.persistor.UsersFound()
+	persistor := c.persistorCreator()
+	persistor.PersistAndFind() <- strokeNear
+	saved := <-persistor.Saved()
+	nearUsers := <-persistor.UsersFound()
 	if !saved {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)
@@ -31,7 +32,7 @@ func (c *controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 	sendOkJSON(w, nearUsers)
 }
 
-func (c *controller) storeHandler(w http.ResponseWriter, r *http.Request) {
+func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 	stroke := new(models.Stroke)
 	err := json.NewDecoder(r.Body).Decode(stroke)
 	if err != nil {
@@ -39,8 +40,9 @@ func (c *controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
-	c.persistor.Persist() <- stroke
-	saved := <-c.persistor.Saved()
+	persistor := c.persistorCreator()
+	persistor.Persist() <- stroke
+	saved := <-persistor.Saved()
 	if !saved {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)

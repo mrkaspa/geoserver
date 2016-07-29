@@ -1,4 +1,4 @@
-package ws
+package handler
 
 type searchActor struct {
 	name     string

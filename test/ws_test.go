@@ -5,104 +5,104 @@ import (
 
 	"sync"
 
+	"github.com/mrkaspa/geoserver/handler"
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
-	"github.com/mrkaspa/geoserver/ws"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/net/websocket"
 )
 
-var (
-	username1           = "a1"
-	wsConnUser1         *websocket.Conn
-	postStrokeUser1Byte []byte
-	postStrokeUser1     *models.StrokeNear
-	username2           = "a2"
-	wsConnUser2         *websocket.Conn
-	postStrokeUser2Byte []byte
-	postStrokeUser2     *models.StrokeNear
-	username3           = "a3"
-	wsConnUser3         *websocket.Conn
-	postStrokeUser3Byte []byte
-	postStrokeUser3     *models.StrokeNear
-	resp1               string
-	resp2               string
-	resp11              string
-	resp12              string
-	resp21              string
-	resp22              string
-	resp31              string
-	resp32              string
-	err1                error
-	err2                error
-	err11               error
-	err12               error
-	err21               error
-	err22               error
-	err31               error
-	err32               error
-)
-
-func withTwoUsers(sleepTime int) {
-	websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
-	if sleepTime > 0 {
-		time.Sleep(time.Duration(sleepTime) * time.Second)
-	}
-	websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		err1 = websocket.Message.Receive(wsConnUser1, &resp1)
-	}()
-	go func() {
-		defer wg.Done()
-		err2 = websocket.Message.Receive(wsConnUser2, &resp2)
-	}()
-	wg.Wait()
-}
-
-func withThreeUsers(sleepTime1, sleepTime2 int) {
-	websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
-	if sleepTime1 > 0 {
-		time.Sleep(time.Duration(sleepTime1) * time.Second)
-	}
-	websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
-	if sleepTime2 > 0 {
-		time.Sleep(time.Duration(sleepTime2) * time.Second)
-	}
-	websocket.Message.Send(wsConnUser3, postStrokeUser3Byte)
-	wg := sync.WaitGroup{}
-	wg.Add(6)
-	go func() {
-		defer wg.Done()
-		err11 = websocket.Message.Receive(wsConnUser1, &resp11)
-	}()
-	go func() {
-		defer wg.Done()
-		err12 = websocket.Message.Receive(wsConnUser1, &resp12)
-	}()
-	go func() {
-		defer wg.Done()
-		err21 = websocket.Message.Receive(wsConnUser2, &resp21)
-	}()
-	go func() {
-		defer wg.Done()
-		err22 = websocket.Message.Receive(wsConnUser2, &resp22)
-	}()
-	go func() {
-		defer wg.Done()
-		err31 = websocket.Message.Receive(wsConnUser3, &resp31)
-	}()
-	go func() {
-		defer wg.Done()
-		err32 = websocket.Message.Receive(wsConnUser3, &resp32)
-	}()
-	wg.Wait()
-}
-
 var _ = Describe("WS Behavior", func() {
+
+	var (
+		username1           = "a1"
+		wsConnUser1         *websocket.Conn
+		postStrokeUser1Byte []byte
+		postStrokeUser1     *models.StrokeNear
+		username2           = "a2"
+		wsConnUser2         *websocket.Conn
+		postStrokeUser2Byte []byte
+		postStrokeUser2     *models.StrokeNear
+		username3           = "a3"
+		wsConnUser3         *websocket.Conn
+		postStrokeUser3Byte []byte
+		postStrokeUser3     *models.StrokeNear
+		resp1               string
+		resp2               string
+		resp11              string
+		resp12              string
+		resp21              string
+		resp22              string
+		resp31              string
+		resp32              string
+		err1                error
+		err2                error
+		err11               error
+		err12               error
+		err21               error
+		err22               error
+		err31               error
+		err32               error
+	)
+
+	withTwoUsers := func(sleepTime int) {
+		websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
+		if sleepTime > 0 {
+			time.Sleep(time.Duration(sleepTime) * time.Second)
+		}
+		websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			err1 = websocket.Message.Receive(wsConnUser1, &resp1)
+		}()
+		go func() {
+			defer wg.Done()
+			err2 = websocket.Message.Receive(wsConnUser2, &resp2)
+		}()
+		wg.Wait()
+	}
+
+	withThreeUsers := func(sleepTime1, sleepTime2 int) {
+		websocket.Message.Send(wsConnUser1, postStrokeUser1Byte)
+		if sleepTime1 > 0 {
+			time.Sleep(time.Duration(sleepTime1) * time.Second)
+		}
+		websocket.Message.Send(wsConnUser2, postStrokeUser2Byte)
+		if sleepTime2 > 0 {
+			time.Sleep(time.Duration(sleepTime2) * time.Second)
+		}
+		websocket.Message.Send(wsConnUser3, postStrokeUser3Byte)
+		wg := sync.WaitGroup{}
+		wg.Add(6)
+		go func() {
+			defer wg.Done()
+			err11 = websocket.Message.Receive(wsConnUser1, &resp11)
+		}()
+		go func() {
+			defer wg.Done()
+			err12 = websocket.Message.Receive(wsConnUser1, &resp12)
+		}()
+		go func() {
+			defer wg.Done()
+			err21 = websocket.Message.Receive(wsConnUser2, &resp21)
+		}()
+		go func() {
+			defer wg.Done()
+			err22 = websocket.Message.Receive(wsConnUser2, &resp22)
+		}()
+		go func() {
+			defer wg.Done()
+			err31 = websocket.Message.Receive(wsConnUser3, &resp31)
+		}()
+		go func() {
+			defer wg.Done()
+			err32 = websocket.Message.Receive(wsConnUser3, &resp32)
+		}()
+		wg.Wait()
+	}
 
 	BeforeEach(func() {
 		wsConnUser1 = createClient(ts.URL, username1)
@@ -120,7 +120,7 @@ var _ = Describe("WS Behavior", func() {
 		if wsConnUser3.IsServerConn() {
 			wsConnUser3.Close()
 		}
-		ws.SearcherVar.Clean <- true
+		handler.SearcherVar.Clean <- true
 	})
 
 	Context("with two users", func() {
@@ -133,17 +133,17 @@ var _ = Describe("WS Behavior", func() {
 		It("should do match", func() {
 			withTwoUsers(0)
 			Expect(err1).To(BeNil())
-			Expect(resp1).To(BeEquivalentTo(postStrokeUser2.Stroke.Info))
+			Expect(resp1).To(Equal(postStrokeUser2.Stroke.Info))
 			Expect(err2).To(BeNil())
-			Expect(resp2).To(BeEquivalentTo(postStrokeUser1.Stroke.Info))
+			Expect(resp2).To(Equal(postStrokeUser1.Stroke.Info))
 		})
 
 		It("should do match after 1 second", func() {
 			withTwoUsers(1)
 			Expect(err1).To(BeNil())
-			Expect(resp1).To(BeEquivalentTo(postStrokeUser2.Stroke.Info))
+			Expect(resp1).To(Equal(postStrokeUser2.Stroke.Info))
 			Expect(err2).To(BeNil())
-			Expect(resp2).To(BeEquivalentTo(postStrokeUser1.Stroke.Info))
+			Expect(resp2).To(Equal(postStrokeUser1.Stroke.Info))
 		})
 
 		It("should do not match", func() {

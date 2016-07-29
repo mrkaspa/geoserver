@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/mrkaspa/geoserver/handler"
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
@@ -26,9 +25,8 @@ func startServer() {
 }
 
 func initMain() {
-	if err := godotenv.Load(".env_dev"); err != nil {
-		log.Fatal("Error loading .env_dev file")
-	}
-	utils.Init()
-	models.Init()
+	utils.LoadEnv(".env_dev")
+	utils.InitLogger()
+	models.InitDB()
+	handler.InitSearcher(models.NewPersistor)
 }
