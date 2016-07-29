@@ -14,7 +14,6 @@ type controller struct {
 
 func (c controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 	strokeNear := new(models.StrokeNear)
-	utils.Log.Infof("/near: %v", strokeNear)
 	err := json.NewDecoder(r.Body).Decode(strokeNear)
 	if err != nil {
 		w.WriteHeader(http.StatusNotAcceptable)

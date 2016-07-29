@@ -18,14 +18,15 @@ func main() {
 func startServer() {
 	http.Handle("/", handler.NewRouter())
 	port := os.Getenv("PORT")
-	err := http.ListenAndServe(":"+port, nil)
+	host := os.Getenv("HOST")
+	err := http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
 }
 
 func initMain() {
-	utils.LoadEnv(".env_dev")
+	utils.LoadEnv(".env")
 	utils.InitLogger()
 	models.InitDB()
 	handler.InitSearcher(models.NewPersistor)
