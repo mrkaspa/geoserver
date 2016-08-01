@@ -26,7 +26,13 @@ var _ = Describe("actor", func() {
 		createdActor := <-response
 		createdActor.poisonPill <- true
 		time.Sleep(1 * time.Second)
-		Expect(SearcherVar.directory).To(BeEmpty())
+
+		SearcherVar.search <- &searchActor{
+			name:     actorName,
+			response: response,
+		}
+		actorFound := <-response
+		Expect(actorFound).To(BeNil())
 	})
 
 })
