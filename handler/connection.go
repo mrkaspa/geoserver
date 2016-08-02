@@ -91,7 +91,7 @@ func (c *connection) processMessages() {
 
 // process each message
 func (c *connection) processMessage(message []byte) {
-	register := registerActor{
+	register := registerActorWithResponse{
 		name:     c.name,
 		response: make(chan *actor),
 	}
@@ -102,7 +102,7 @@ func (c *connection) processMessage(message []byte) {
 	var strokeNear models.StrokeNear
 	json.Unmarshal(message, &strokeNear)
 	strokeNear.Stroke.UserID = actorRef.name
-	actorRef.strokesNear <- &strokeNear
+	actorRef.strokesNear <- strokeNear
 	for response := range actorRef.responses {
 		// expects all the responses from the actor until it dies
 		c.send <- response

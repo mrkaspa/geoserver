@@ -8,8 +8,8 @@ import (
 type searcher struct {
 	persistorCreator func() models.Persistance
 	directory        map[string]*actor
-	search           chan *searchActor
-	register         chan *registerActor
+	search           chan *searchActorWithResponse
+	register         chan *registerActorWithResponse
 	unregister       chan string
 	Clean            chan bool
 }
@@ -22,8 +22,8 @@ func InitSearcher(persistorCreator func() models.Persistance) {
 	SearcherVar = &searcher{
 		persistorCreator: persistorCreator,
 		directory:        make(map[string]*actor),
-		search:           make(chan *searchActor, 256),
-		register:         make(chan *registerActor, 256),
+		search:           make(chan *searchActorWithResponse, 256),
+		register:         make(chan *registerActorWithResponse, 256),
 		unregister:       make(chan string, 256),
 		Clean:            make(chan bool),
 	}

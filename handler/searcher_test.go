@@ -15,7 +15,7 @@ var _ = Describe("searcher", func() {
 
 	It("should register the actor", func() {
 		response := make(chan *actor)
-		SearcherVar.register <- &registerActor{
+		SearcherVar.register <- &registerActorWithResponse{
 			name:     actorName,
 			response: response,
 		}
@@ -29,7 +29,7 @@ var _ = Describe("searcher", func() {
 
 		BeforeEach(func() {
 			response := make(chan *actor)
-			SearcherVar.register <- &registerActor{
+			SearcherVar.register <- &registerActorWithResponse{
 				name:     actorName,
 				response: response,
 			}
@@ -38,7 +38,7 @@ var _ = Describe("searcher", func() {
 
 		It("should find the actor", func() {
 			response := make(chan *actor)
-			SearcherVar.search <- &searchActor{
+			SearcherVar.search <- &searchActorWithResponse{
 				name:     actorName,
 				response: response,
 			}
@@ -49,7 +49,7 @@ var _ = Describe("searcher", func() {
 		It("should unregister the actor when this dies", func() {
 			SearcherVar.unregister <- actorName
 			response := make(chan *actor)
-			SearcherVar.search <- &searchActor{
+			SearcherVar.search <- &searchActorWithResponse{
 				name:     actorName,
 				response: response,
 			}

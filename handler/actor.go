@@ -37,9 +37,10 @@ type actor struct {
 	sentActors       map[*actor]bool
 	addConnection    chan *connection
 	removeConnection chan *connection
-	strokesNear      chan *models.StrokeNear
+	strokesNear      chan models.StrokeNear
+	foundStrokes     chan []models.Stroke
 	responses        chan []byte
-	broadcast        chan *broadcastActor
+	broadcast        chan broadcastActor
 	ping             chan *actor
 	pong             chan *actor
 	poisonPill       chan bool
@@ -58,9 +59,10 @@ func newActor(name string, persistorCreator func() models.Persistance) *actor {
 		removeConnection: make(chan *connection),
 		matchedActors:    make(map[*actor]bool),
 		sentActors:       make(map[*actor]bool),
-		strokesNear:      make(chan *models.StrokeNear),
+		strokesNear:      make(chan models.StrokeNear),
+		foundStrokes:     make(chan []models.Stroke),
 		responses:        make(chan []byte),
-		broadcast:        make(chan *broadcastActor, 256),
+		broadcast:        make(chan broadcastActor, 256),
 		ping:             make(chan *actor, 256),
 		pong:             make(chan *actor, 256),
 		poisonPill:       make(chan bool, 1),
@@ -91,7 +93,7 @@ func (a *actor) run() {
 			a.removeConnectionBy(conn)
 		case strokeVar := <-a.strokesNear:
 			a.persist(strokeVar)
-		case users := <-a.persistor.UsersFound():
+		case users := <-a.foundStrokes:
 			a.receivingNearUsers(users)
 		case actorPing := <-a.ping:
 			a.receivingPing(actorPing)
@@ -105,12 +107,13 @@ func (a *actor) run() {
 
 func (a *actor) receivingNearUsers(users []models.Stroke) {
 	for _, u := range users {
-		searchActorVar := searchActor{
+		response := make(chan *actor)
+		searchActorVar := searchActorWithResponse{
 			name:     u.UserID,
-			response: make(chan *actor),
+			response: response,
 		}
 		SearcherVar.search <- &searchActorVar
-		actorRef := <-searchActorVar.response
+		actorRef := <-response
 		a.matchedActors[actorRef] = false
 		if actorRef != nil {
 			actorRef.ping <- a
@@ -119,7 +122,7 @@ func (a *actor) receivingNearUsers(users []models.Stroke) {
 }
 
 func (a *actor) receivingPing(actorPing *actor) {
-	a.broadcast <- &broadcastActor{actorPing, true}
+	a.broadcast <- broadcastActor{actorPing, true}
 	_, ok := a.matchedActors[actorPing]
 	utils.Log.Infof("%s received a PING from %s, ok: %t", a.name, actorPing.name, ok)
 	if !ok {
@@ -135,10 +138,10 @@ func (a *actor) receivingPing(actorPing *actor) {
 func (a *actor) receivingPong(actorPong *actor) {
 	utils.Log.Infof("%s received a PONG from %s", a.name, actorPong.name)
 	a.matchedActors[actorPong] = true
-	a.broadcast <- &broadcastActor{actorPong, true}
+	a.broadcast <- broadcastActor{actorPong, true}
 }
 
-func (a *actor) sendBroadcast(actorToSend *broadcastActor) {
+func (a *actor) sendBroadcast(actorToSend broadcastActor) {
 	actorFound := actorToSend.actor
 	a.broadcastActor(actorFound)
 	utils.Log.Infof("sendBroadcast a: %s, actorFound: %s, recursive: %t", a.name, actorFound.name, actorToSend.recursive)
@@ -146,24 +149,29 @@ func (a *actor) sendBroadcast(actorToSend *broadcastActor) {
 		for actorPonged, ponged := range a.matchedActors {
 			if ponged && actorPonged != actorFound {
 				utils.Log.Infof("sendBroadcast a: %s, matchedActors: %s", a.name, actorPonged.name)
-				actorPonged.broadcast <- &broadcastActor{actorFound, false}
+				actorPonged.broadcast <- broadcastActor{actorFound, false}
 			}
 		}
 		for actorPonged, ponged := range actorFound.matchedActors {
 			if ponged && actorPonged != a {
 				utils.Log.Infof("sendBroadcast actorFound: %s, matchedActors: %s", actorFound.name, actorPonged.name)
 				a.broadcastActor(actorPonged)
-				actorPonged.broadcast <- &broadcastActor{a, false}
+				actorPonged.broadcast <- broadcastActor{a, false}
 			}
 		}
 	}
 }
 
 // sends the persist message
-func (a *actor) persist(strokeNear *models.StrokeNear) {
+func (a *actor) persist(strokeNear models.StrokeNear) {
 	a.info = []byte(strokeNear.Stroke.Info)
-	a.persistor.PersistAndFind() <- strokeNear
-	if <-a.persistor.Saved() {
+	response := make(chan bool)
+	a.persistor.PersistAndFind() <- models.PersistAndFindWithResponse{
+		StrokeNear:    strokeNear,
+		SavedResponse: response,
+		UsersResponse: a.foundStrokes,
+	}
+	if <-response {
 		go a.dieLater(strokeNear.TimeRange)
 	}
 }

@@ -19,7 +19,7 @@ var _ = Describe("actor", func() {
 
 	It("should be unregistered after dying", func() {
 		response := make(chan *actor)
-		SearcherVar.register <- &registerActor{
+		SearcherVar.register <- &registerActorWithResponse{
 			name:     actorName,
 			response: response,
 		}
@@ -27,7 +27,7 @@ var _ = Describe("actor", func() {
 		createdActor.poisonPill <- true
 		time.Sleep(1 * time.Second)
 
-		SearcherVar.search <- &searchActor{
+		SearcherVar.search <- &searchActorWithResponse{
 			name:     actorName,
 			response: response,
 		}

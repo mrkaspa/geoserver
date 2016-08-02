@@ -8,45 +8,31 @@ import (
 )
 
 type Persistance interface {
-	PersistAndFind() chan *StrokeNear
-	Persist() chan *Stroke
-	UsersFound() chan []Stroke
-	Saved() chan bool
+	PersistAndFind() chan PersistAndFindWithResponse
+	Persist() chan PersistWithResponse
 }
 
 // Persistor takes care of persisting strokes and finding near ones
 type Persistor struct {
-	persistAndFind chan *StrokeNear
-	persist        chan *Stroke
-	usersFound     chan []Stroke
-	saved          chan bool
+	persistAndFind chan PersistAndFindWithResponse
+	persist        chan PersistWithResponse
 }
 
 func NewPersistor() Persistance {
 	persistor := Persistor{
-		persistAndFind: make(chan *StrokeNear, 256),
-		persist:        make(chan *Stroke, 256),
-		usersFound:     make(chan []Stroke, 256),
-		saved:          make(chan bool, 256),
+		persistAndFind: make(chan PersistAndFindWithResponse, 256),
+		persist:        make(chan PersistWithResponse, 256),
 	}
 	go persistor.run()
 	return persistor
 }
 
-func (p Persistor) PersistAndFind() chan *StrokeNear {
+func (p Persistor) PersistAndFind() chan PersistAndFindWithResponse {
 	return p.persistAndFind
 }
 
-func (p Persistor) Persist() chan *Stroke {
+func (p Persistor) Persist() chan PersistWithResponse {
 	return p.persist
-}
-
-func (p Persistor) UsersFound() chan []Stroke {
-	return p.usersFound
-}
-
-func (p Persistor) Saved() chan bool {
-	return p.saved
 }
 
 func (p Persistor) run() {
@@ -57,35 +43,39 @@ func (p Persistor) run() {
 	}()
 	for {
 		select {
-		case stroke := <-p.persist:
+		case pwr := <-p.persist:
+			stroke := pwr.Stroke
 			utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
-			p.save(stroke)
-		case strokeNear := <-p.persistAndFind:
-			utils.Log.Infof("Persistor executing PersistAndFind: %v", strokeNear)
-			if p.save(&strokeNear.Stroke) {
-				nearUsers, err := p.findNear(strokeNear)
-				if err != nil {
-					panic(err)
-				}
-				p.usersFound <- nearUsers
+			if err := p.save(stroke); err != nil {
+				pwr.Response <- false
+				continue
 			}
+			pwr.Response <- true
+		case pfwr := <-p.persistAndFind:
+			strokeNear := pfwr.StrokeNear
+			utils.Log.Infof("Persistor executing PersistAndFind: %v", strokeNear)
+			if err := p.save(strokeNear.Stroke); err != nil {
+				pfwr.SavedResponse <- false
+				continue
+			}
+
+			pfwr.SavedResponse <- true
+			nearUsers, err := p.findNear(strokeNear)
+			if err != nil {
+				continue
+			}
+			pfwr.UsersResponse <- nearUsers
 		}
 	}
 }
 
-func (p *Persistor) save(stroke *Stroke) bool {
+func (p *Persistor) save(stroke Stroke) error {
 	stroke.CreatedAt = time.Now()
 	utils.Log.Infof("Persisting %s stroke: %v", stroke.UserID, stroke)
-	err := StrokesCollection.Insert(stroke)
-	if err != nil {
-		p.saved <- false
-		return false
-	}
-	p.saved <- true
-	return true
+	return StrokesCollection.Insert(stroke)
 }
 
-func (p *Persistor) findNear(strokeNear *StrokeNear) ([]Stroke, error) {
+func (p *Persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildQuery(strokeNear)
 	err := StrokesCollection.Find(query).All(&results)
@@ -94,7 +84,7 @@ func (p *Persistor) findNear(strokeNear *StrokeNear) ([]Stroke, error) {
 	return results, err
 }
 
-func buildQuery(strokeNear *StrokeNear) bson.M {
+func buildQuery(strokeNear StrokeNear) bson.M {
 	query := bson.M{
 		"location": bson.M{
 			"$nearSphere": bson.M{

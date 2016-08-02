@@ -1,11 +1,11 @@
 package handler
 
-type searchActor struct {
+type searchActorWithResponse struct {
 	name     string
 	response chan *actor
 }
 
-type registerActor struct {
+type registerActorWithResponse struct {
 	name     string
 	response chan *actor
 }

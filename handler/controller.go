@@ -13,16 +13,24 @@ type controller struct {
 }
 
 func (c controller) nearHandler(w http.ResponseWriter, r *http.Request) {
-	strokeNear := new(models.StrokeNear)
-	err := json.NewDecoder(r.Body).Decode(strokeNear)
+	strokeNear := models.StrokeNear{}
+	err := json.NewDecoder(r.Body).Decode(&strokeNear)
 	if err != nil {
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
+
+	savedResponse := make(chan bool)
+	usersResponse := make(chan []models.Stroke)
 	persistor := c.persistorCreator()
-	persistor.PersistAndFind() <- strokeNear
-	saved := <-persistor.Saved()
-	nearUsers := <-persistor.UsersFound()
+	persistor.PersistAndFind() <- models.PersistAndFindWithResponse{
+		StrokeNear:    strokeNear,
+		SavedResponse: savedResponse,
+		UsersResponse: usersResponse,
+	}
+	saved := <-savedResponse
+	nearUsers := <-usersResponse
+
 	if !saved {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)
@@ -32,16 +40,22 @@ func (c controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
-	stroke := new(models.Stroke)
-	err := json.NewDecoder(r.Body).Decode(stroke)
+	stroke := models.Stroke{}
+	err := json.NewDecoder(r.Body).Decode(&stroke)
 	if err != nil {
 		utils.Log.Infof("Response %d", http.StatusNotAcceptable)
 		w.WriteHeader(http.StatusNotAcceptable)
 		return
 	}
+
+	response := make(chan bool)
 	persistor := c.persistorCreator()
-	persistor.Persist() <- stroke
-	saved := <-persistor.Saved()
+	persistor.Persist() <- models.PersistWithResponse{
+		Stroke:   stroke,
+		Response: response,
+	}
+
+	saved := <-response
 	if !saved {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)
