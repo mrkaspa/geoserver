@@ -32,6 +32,50 @@ The API is divided by in two, a tipical REST API and a WEBSOCKET service.
 
 ### REST
 
+#### Store a geolocation point
 
+Send a POST request to the endpoint http://localhost:8080/store with a json like this:
+
+```js
+{
+    "location": [-79.38066843, 43.65483486],
+     "user_id": "demo@demo.com",
+     "info": "info to share" 
+}
+```
+
+Returns status 200 if saves the geolocation point
+
+#### Store and retrieve near points
+
+Send a POST request to the endpoint http://localhost:8080/near with a json like this:
+
+```js
+{
+    "time_range": 5, // seconds
+    "max_distance": 5, // meters
+    "stroke": {
+        "location": [-79.38066843, 43.65483486],
+        "user_id": "demo@demo.com",
+        "info": "info to share"
+    } 
+}
+```
+
+Returns status 200 if saves the geolocation point and the points found near. In the time_range you set a time limit to find users if you don't want to use this filter set it to 0, the max distance is a parameter to query the nearest users.
+
+A response can look like this:
+
+```js
+[
+    {
+        "location": [-79.38066853, 43.65483586],
+        "user_id": "another@demo.com",
+        "info": "info to share"
+    }
+]
+```
 
 ### Websocket
+
+#### Store and retrieve near points in real time
