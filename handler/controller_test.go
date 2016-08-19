@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 
+	"fmt"
 	"github.com/mrkaspa/geoserver/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,6 +49,10 @@ var _ = Describe("controller", func() {
 		var matches []models.Stroke
 		json.Unmarshal(w.Body.Bytes(), &matches)
 		Expect(matches).ToNot(BeEmpty())
+	})
+
+	It("tests recentStrokes", func() {
+		fmt.Println("hola")
 	})
 
 })
