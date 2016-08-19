@@ -53,6 +53,7 @@ var _ = Describe("controller", func() {
 
 	It("tests recentStrokes", func() {
 		fmt.Println("hola")
+		fmt.Println("hola")
 	})
 
 })
