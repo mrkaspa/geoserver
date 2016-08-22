@@ -10,18 +10,21 @@ import (
 type Persistance interface {
 	PersistAndFind() chan PersistAndFindWithResponse
 	Persist() chan PersistWithResponse
+	FindStrokes() chan FindStrokesWithResponse
 }
 
 // Persistor takes care of persisting strokes and finding near ones
 type Persistor struct {
 	persistAndFind chan PersistAndFindWithResponse
 	persist        chan PersistWithResponse
+	findStrokes    chan FindStrokesWithResponse
 }
 
 func NewPersistor() Persistance {
 	persistor := Persistor{
 		persistAndFind: make(chan PersistAndFindWithResponse, 256),
 		persist:        make(chan PersistWithResponse, 256),
+		findStrokes:    make(chan FindStrokesWithResponse, 256),
 	}
 	go persistor.run()
 	return persistor
@@ -33,6 +36,10 @@ func (p Persistor) PersistAndFind() chan PersistAndFindWithResponse {
 
 func (p Persistor) Persist() chan PersistWithResponse {
 	return p.persist
+}
+
+func (p Persistor) FindStrokes() chan FindStrokesWithResponse {
+	return p.findStrokes
 }
 
 func (p Persistor) run() {
@@ -65,6 +72,12 @@ func (p Persistor) run() {
 				continue
 			}
 			pfwr.UsersResponse <- nearUsers
+		case fs := <-p.findStrokes:
+			strokes, err := p.history(fs.Username)
+			if err != nil {
+				continue
+			}
+			fs.Response <- strokes
 		}
 	}
 }
@@ -75,16 +88,29 @@ func (p *Persistor) save(stroke Stroke) error {
 	return StrokesCollection.Insert(stroke)
 }
 
+func (p *Persistor) history(username string) ([]Stroke, error) {
+	results := []Stroke{}
+	query := buildHistoryQuery(username)
+	err := StrokesCollection.Find(query).All(&results)
+	utils.Log.Infof("Query executed by %s", username)
+	utils.Log.Infof("Actor %s found matches %d", username, len(results))
+	return results, err
+}
+
+func buildHistoryQuery(username string) bson.M {
+	return bson.M{}
+}
+
 func (p *Persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
 	results := []Stroke{}
-	query := buildQuery(strokeNear)
+	query := buildNearQuery(strokeNear)
 	err := StrokesCollection.Find(query).All(&results)
 	utils.Log.Infof("Query executed by %s: %v", strokeNear.Stroke.UserID, query)
 	utils.Log.Infof("Actor %s found matches %d", strokeNear.Stroke.UserID, len(results))
 	return results, err
 }
 
-func buildQuery(strokeNear StrokeNear) bson.M {
+func buildNearQuery(strokeNear StrokeNear) bson.M {
 	query := bson.M{
 		"location": bson.M{
 			"$nearSphere": bson.M{

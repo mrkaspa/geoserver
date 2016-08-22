@@ -19,6 +19,7 @@ func NewRouter() http.Handler {
 	router.mux.HandleFunc("/ws/{username}", adapter)
 	router.mux.HandleFunc("/near", controller.nearHandler).Methods("POST")
 	router.mux.HandleFunc("/store", controller.storeHandler).Methods("POST")
+	router.mux.HandleFunc("/recent/:id", controller.recentStrokes).Methods("GET")
 	n.Use(router)
 	return n
 }

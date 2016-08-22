@@ -10,3 +10,8 @@ type PersistAndFindWithResponse struct {
 	SavedResponse chan bool
 	UsersResponse chan []Stroke
 }
+
+type FindStrokesWithResponse struct {
+	Username string
+	Response chan []Stroke
+}

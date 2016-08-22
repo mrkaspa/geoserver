@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 )
@@ -63,4 +64,16 @@ func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.Log.Infof("Response %d", http.StatusOK)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (c controller) recentStrokes(w http.ResponseWriter, r *http.Request) {
+	username := mux.Vars(r)["id"]
+	persistor := c.persistorCreator()
+	strokesResponse := make(chan []models.Stroke)
+	persistor.FindStrokes() <- models.FindStrokesWithResponse{
+		Username: username,
+		Response: strokesResponse,
+	}
+	history := <-strokesResponse
+	sendOkJSON(w, history)
 }

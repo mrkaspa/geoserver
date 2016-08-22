@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"fmt"
 	"github.com/mrkaspa/geoserver/models"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -52,8 +51,16 @@ var _ = Describe("controller", func() {
 	})
 
 	It("tests recentStrokes", func() {
-		fmt.Println("hola")
-		fmt.Println("hola")
+		req, ok := http.NewRequest(http.MethodGet, "/recent/a1", nil)
+		if ok != nil {
+			panic("Req err")
+		}
+		w := httptest.NewRecorder()
+		testController.recentStrokes(w, req)
+		Expect(w.Code).To(Equal(http.StatusOK))
+		var matches []models.Stroke
+		json.Unmarshal(w.Body.Bytes(), &matches)
+		Expect(matches).ToNot(BeEmpty())
 	})
 
 })
