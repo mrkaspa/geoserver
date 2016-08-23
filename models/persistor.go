@@ -91,20 +91,20 @@ func (p *Persistor) save(stroke Stroke) error {
 func (p *Persistor) history(username string) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildHistoryQuery(username)
-	err := StrokesCollection.Find(query).All(&results)
+	err := StrokesCollection.Find(query).Sort("-created_at").All(&results)
 	utils.Log.Infof("Query executed by %s", username)
 	utils.Log.Infof("Actor %s found matches %d", username, len(results))
 	return results, err
 }
 
 func buildHistoryQuery(username string) bson.M {
-	return bson.M{}
+	return bson.M{"user_id": username}
 }
 
 func (p *Persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildNearQuery(strokeNear)
-	err := StrokesCollection.Find(query).All(&results)
+	err := StrokesCollection.Find(query).Sort("-created_at").All(&results)
 	utils.Log.Infof("Query executed by %s: %v", strokeNear.Stroke.UserID, query)
 	utils.Log.Infof("Actor %s found matches %d", strokeNear.Stroke.UserID, len(results))
 	return results, err

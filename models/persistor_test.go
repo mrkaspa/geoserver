@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/mgo.v2/bson"
@@ -20,11 +22,11 @@ var _ = Describe("persistor", func() {
 		Location: []float64{-79.38066843, 43.65483486},
 	}
 
-	//a3 := Stroke{
-	//	UserID:   "a2",
-	//	Info:     "a2",
-	//	Location: []float64{59.38066843, 43.65483486},
-	//}
+	a3 := Stroke{
+		UserID:   "a2",
+		Info:     "a2",
+		Location: []float64{59.38066843, 43.65483486},
+	}
 
 	strokesTests := []struct {
 		stroke          Stroke
@@ -32,16 +34,16 @@ var _ = Describe("persistor", func() {
 		expectedResults int
 	}{
 		{a1, StrokeNear{5, 10, a2}, 1},
-		//{a1, StrokeNear{5, 10, a1}, 0},
-		//{a1, StrokeNear{5, 10, a3}, 0},
+		{a1, StrokeNear{5, 10, a1}, 0},
+		{a1, StrokeNear{5, 10, a3}, 0},
 	}
 
-	clearDB := func() {
+	cleanDB := func() {
 		StrokesCollection.RemoveAll(bson.M{})
 	}
 
-	AfterEach(func() {
-		clearDB()
+	BeforeEach(func() {
+		cleanDB()
 	})
 
 	It("should save the stroke", func() {
@@ -56,20 +58,28 @@ var _ = Describe("persistor", func() {
 			Response: response,
 		}
 		Expect(<-response).To(BeTrue())
+
+		strokesResponse := make(chan []Stroke)
+		persistor.FindStrokes() <- FindStrokesWithResponse{
+			Username: "a1",
+			Response: strokesResponse,
+		}
+
+		Expect(<-strokesResponse).ToNot(BeEmpty())
 	})
 
-	FIt("should get the expected matches", func() {
-		persistor := NewPersistor()
-		for _, tt := range strokesTests {
-			response := make(chan bool)
+	for i, tt := range strokesTests {
+		It("should get the expected matches", func() {
+			persistor := NewPersistor()
+			fmt.Printf("running %d", i)
 			savedResponse := make(chan bool)
 			usersResponse := make(chan []Stroke)
 
 			persistor.Persist() <- PersistWithResponse{
 				Stroke:   tt.stroke,
-				Response: response,
+				Response: savedResponse,
 			}
-			Expect(<-response).To(BeTrue())
+			Expect(<-savedResponse).To(BeTrue())
 
 			persistor.PersistAndFind() <- PersistAndFindWithResponse{
 				StrokeNear:    tt.strokeNear,
@@ -79,8 +89,7 @@ var _ = Describe("persistor", func() {
 			Expect(<-savedResponse).To(BeTrue())
 			matches := <-usersResponse
 			Expect(len(matches)).To(Equal(tt.expectedResults))
-			clearDB()
-		}
-	})
+		})
+	}
 
 })

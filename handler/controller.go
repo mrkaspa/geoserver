@@ -67,6 +67,7 @@ func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c controller) recentStrokes(w http.ResponseWriter, r *http.Request) {
+	utils.Log.Infof("HELLLLLO")
 	username := mux.Vars(r)["id"]
 	persistor := c.persistorCreator()
 	strokesResponse := make(chan []models.Stroke)
