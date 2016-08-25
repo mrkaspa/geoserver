@@ -60,7 +60,7 @@ func newActor(name string, persistorCreator func() models.Persistance) *actor {
 		matchedActors:    make(map[*actor]bool),
 		sentActors:       make(map[*actor]bool),
 		strokesNear:      make(chan models.StrokeNear),
-		foundStrokes:     make(chan []models.Stroke),
+		foundStrokes:     make(chan []models.Stroke, 256),
 		responses:        make(chan []byte),
 		broadcast:        make(chan broadcastActor, 256),
 		ping:             make(chan *actor, 256),
@@ -165,15 +165,14 @@ func (a *actor) sendBroadcast(actorToSend broadcastActor) {
 // sends the persist message
 func (a *actor) persist(strokeNear models.StrokeNear) {
 	a.info = []byte(strokeNear.Stroke.Info)
-	response := make(chan bool)
-	a.persistor.PersistAndFind() <- models.PersistAndFindWithResponse{
-		StrokeNear:    strokeNear,
-		SavedResponse: response,
-		UsersResponse: a.foundStrokes,
+	strokes, err := a.persistor.PersistAndFind(strokeNear)
+
+	utils.Log.Infof("persist and find %s strokes = %v, err: %v", a.name, strokes, err)
+	if err != nil {
+		return
 	}
-	if <-response {
-		go a.dieLater(strokeNear.TimeRange)
-	}
+	a.foundStrokes <- strokes
+	go a.dieLater(strokeNear.TimeRange)
 }
 
 // sends data to all connectios

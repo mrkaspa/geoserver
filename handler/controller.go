@@ -21,18 +21,10 @@ func (c controller) nearHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	savedResponse := make(chan bool)
-	usersResponse := make(chan []models.Stroke)
 	persistor := c.persistorCreator()
-	persistor.PersistAndFind() <- models.PersistAndFindWithResponse{
-		StrokeNear:    strokeNear,
-		SavedResponse: savedResponse,
-		UsersResponse: usersResponse,
-	}
-	saved := <-savedResponse
-	nearUsers := <-usersResponse
+	nearUsers, err := persistor.PersistAndFind(strokeNear)
 
-	if !saved {
+	if err != nil {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)
 		return
@@ -49,15 +41,10 @@ func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make(chan bool)
 	persistor := c.persistorCreator()
-	persistor.Persist() <- models.PersistWithResponse{
-		Stroke:   stroke,
-		Response: response,
-	}
+	err = persistor.Persist(stroke)
 
-	saved := <-response
-	if !saved {
+	if err != nil {
 		utils.Log.Infof("Response %d", http.StatusConflict)
 		w.WriteHeader(http.StatusConflict)
 		return
@@ -67,14 +54,15 @@ func (c controller) storeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c controller) recentStrokes(w http.ResponseWriter, r *http.Request) {
-	utils.Log.Infof("HELLLLLO")
 	username := mux.Vars(r)["id"]
+
 	persistor := c.persistorCreator()
-	strokesResponse := make(chan []models.Stroke)
-	persistor.FindStrokes() <- models.FindStrokesWithResponse{
-		Username: username,
-		Response: strokesResponse,
+	history, err := persistor.FindStrokes(username)
+
+	if err != nil {
+		utils.Log.Infof("Response %d", http.StatusConflict)
+		w.WriteHeader(http.StatusConflict)
+		return
 	}
-	history := <-strokesResponse
 	sendOkJSON(w, history)
 }

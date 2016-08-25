@@ -47,48 +47,30 @@ var _ = Describe("persistor", func() {
 	})
 
 	It("should save the stroke", func() {
-		response := make(chan bool)
 		persistor := NewPersistor()
-		persistor.Persist() <- PersistWithResponse{
-			Stroke: Stroke{
-				UserID:   "a1",
-				Info:     "a1",
-				Location: []float64{-79.38066843, 43.65483486},
-			},
-			Response: response,
-		}
-		Expect(<-response).To(BeTrue())
+		err := persistor.Persist(Stroke{
+			UserID:   "a1",
+			Info:     "a1",
+			Location: []float64{-79.38066843, 43.65483486},
+		})
+		Expect(err).To(BeNil())
 
-		strokesResponse := make(chan []Stroke)
-		persistor.FindStrokes() <- FindStrokesWithResponse{
-			Username: "a1",
-			Response: strokesResponse,
-		}
-
-		Expect(<-strokesResponse).ToNot(BeEmpty())
+		strokes, err := persistor.FindStrokes("a1")
+		Expect(err).To(BeNil())
+		Expect(strokes).ToNot(BeEmpty())
 	})
 
 	for i, tt := range strokesTests {
 		It("should get the expected matches", func() {
 			persistor := NewPersistor()
 			fmt.Printf("running %d", i)
-			savedResponse := make(chan bool)
-			usersResponse := make(chan []Stroke)
 
-			persistor.Persist() <- PersistWithResponse{
-				Stroke:   tt.stroke,
-				Response: savedResponse,
-			}
-			Expect(<-savedResponse).To(BeTrue())
+			err := persistor.Persist(tt.stroke)
+			Expect(err).To(BeNil())
 
-			persistor.PersistAndFind() <- PersistAndFindWithResponse{
-				StrokeNear:    tt.strokeNear,
-				SavedResponse: savedResponse,
-				UsersResponse: usersResponse,
-			}
-			Expect(<-savedResponse).To(BeTrue())
-			matches := <-usersResponse
-			Expect(len(matches)).To(Equal(tt.expectedResults))
+			strokes, err := persistor.PersistAndFind(tt.strokeNear)
+			Expect(err).To(BeNil())
+			Expect(len(strokes)).To(Equal(tt.expectedResults))
 		})
 	}
 

@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("controller", func() {
 
-	testController := controller{persistorCreator: newMockPersistor}
+	testController := controller{persistorCreator: models.NewMockPersistor}
 
 	It("tests storeHandler", func() {
 		stroke := models.Stroke{

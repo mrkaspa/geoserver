@@ -8,87 +8,46 @@ import (
 )
 
 type Persistance interface {
-	PersistAndFind() chan PersistAndFindWithResponse
-	Persist() chan PersistWithResponse
-	FindStrokes() chan FindStrokesWithResponse
+	PersistAndFind(StrokeNear) ([]Stroke, error)
+	Persist(Stroke) error
+	FindStrokes(string) ([]Stroke, error)
 }
 
 // Persistor takes care of persisting strokes and finding near ones
-type Persistor struct {
-	persistAndFind chan PersistAndFindWithResponse
-	persist        chan PersistWithResponse
-	findStrokes    chan FindStrokesWithResponse
+type persistor struct {
 }
 
 func NewPersistor() Persistance {
-	persistor := Persistor{
-		persistAndFind: make(chan PersistAndFindWithResponse, 256),
-		persist:        make(chan PersistWithResponse, 256),
-		findStrokes:    make(chan FindStrokesWithResponse, 256),
+	return persistor{}
+}
+
+func (p persistor) PersistAndFind(sn StrokeNear) ([]Stroke, error) {
+	utils.Log.Infof("Persistor executing PersistAndFind: %v", sn)
+	if err := p.save(sn.Stroke); err != nil {
+		return nil, err
 	}
-	go persistor.run()
-	return persistor
+
+	nearUsers, err := p.findNear(sn)
+	return nearUsers, err
 }
 
-func (p Persistor) PersistAndFind() chan PersistAndFindWithResponse {
-	return p.persistAndFind
+func (p persistor) Persist(s Stroke) error {
+	utils.Log.Infof("Persistor executing Persist: %s", s.UserID)
+	return p.save(s)
 }
 
-func (p Persistor) Persist() chan PersistWithResponse {
-	return p.persist
+func (p persistor) FindStrokes(username string) ([]Stroke, error) {
+	strokes, err := p.history(username)
+	return strokes, err
 }
 
-func (p Persistor) FindStrokes() chan FindStrokesWithResponse {
-	return p.findStrokes
-}
-
-func (p Persistor) run() {
-	defer func() {
-		if r := recover(); r != nil {
-			utils.Log.Infof("Recovered in persistor.Run()")
-		}
-	}()
-	for {
-		select {
-		case pwr := <-p.persist:
-			stroke := pwr.Stroke
-			utils.Log.Infof("Persistor executing Persist: %s", stroke.UserID)
-			if err := p.save(stroke); err != nil {
-				pwr.Response <- false
-				continue
-			}
-			pwr.Response <- true
-		case pfwr := <-p.persistAndFind:
-			strokeNear := pfwr.StrokeNear
-			utils.Log.Infof("Persistor executing PersistAndFind: %v", strokeNear)
-			if err := p.save(strokeNear.Stroke); err != nil {
-				pfwr.SavedResponse <- false
-				continue
-			}
-
-			pfwr.SavedResponse <- true
-			nearUsers, err := p.findNear(strokeNear)
-			if err != nil {
-				continue
-			}
-			pfwr.UsersResponse <- nearUsers
-		case fs := <-p.findStrokes:
-			strokes, err := p.history(fs.Username)
-			if err != nil {
-				continue
-			}
-			fs.Response <- strokes
-		}
-	}
-}
-
-func (p *Persistor) save(stroke Stroke) error {
+func (p *persistor) save(stroke Stroke) error {
 	stroke.CreatedAt = time.Now()
 	utils.Log.Infof("Persisting %s stroke: %v", stroke.UserID, stroke)
 	return StrokesCollection.Insert(stroke)
 }
 
-func (p *Persistor) history(username string) ([]Stroke, error) {
+func (p *persistor) history(username string) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildHistoryQuery(username)
 	err := StrokesCollection.Find(query).Sort("-created_at").All(&results)
@@ -101,7 +60,7 @@ func buildHistoryQuery(username string) bson.M {
 	return bson.M{"user_id": username}
 }
 
-func (p *Persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
+func (p *persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildNearQuery(strokeNear)
 	err := StrokesCollection.Find(query).Sort("-created_at").All(&results)

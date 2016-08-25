@@ -6,6 +6,7 @@ import (
 
 	"testing"
 
+	"github.com/mrkaspa/geoserver/models"
 	"github.com/mrkaspa/geoserver/utils"
 )
 
@@ -17,5 +18,5 @@ func TestHandler(t *testing.T) {
 var _ = BeforeSuite(func() {
 	utils.LoadEnv("../.env_test")
 	utils.InitLogger()
-	InitSearcher(newMockPersistor)
+	InitSearcher(models.NewMockPersistor)
 })
