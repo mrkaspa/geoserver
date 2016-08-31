@@ -220,18 +220,21 @@ func (a *actor) dieLater(seconds int) {
 
 // finish an actor
 func (a *actor) die() {
-	// kills the referenced actors
-	if a.status == alive {
-		utils.Log.Infof("Actor dying: %s -- with %d connections -- should die %v is dying %v", a.name, len(a.connections), a.lifeTime, time.Now())
+	if a.status == dead {
+		return
+	}
 
-		a.status = dead
+	utils.Log.Infof("Actor dying: %s -- with %d connections -- should die %v is dying %v", a.name, len(a.connections), a.lifeTime, time.Now())
+	a.status = dead
+	SearcherVar.unregister <- a.name
+	a.killConnections()
+}
 
-		// closes all the actor connections
-		for _, conn := range a.connections {
-			utils.Log.Infof("Closing connection: %s", conn.name)
-			conn.poisonPill <- true
-			a.removeConnection <- conn
-		}
-		SearcherVar.unregister <- a.name
+// kill the related connections
+func (a *actor) killConnections() {
+	for _, conn := range a.connections {
+		utils.Log.Infof("Closing connection: %s", conn.name)
+		conn.poisonPill <- true
+		a.removeConnection <- conn
 	}
 }
