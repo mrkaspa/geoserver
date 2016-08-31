@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/mrkaspa/geoserver/models"
-	. "github.com/onsi/gomega"
 )
 
 func createStrokeNear(userID string, loc []float64) (*models.StrokeNear, []byte) {
@@ -30,22 +29,4 @@ func createStroke(userID string, loc []float64) (*models.Stroke, []byte) {
 	}
 	json, _ := json.Marshal(&stroke)
 	return &stroke, json
-}
-
-func BeIn(arr []interface{}, val interface{}) bool {
-	for _, v := range arr {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
-func matchTwo(err1, err2 error, resp1, resp2, infoA, infoB string) {
-	posibilities := []interface{}{infoA, infoB}
-	Expect(err1).To(BeNil())
-	Expect(err2).To(BeNil())
-	Expect(resp1).NotTo(Equal(resp2))
-	Expect(BeIn(posibilities, resp1)).To(BeTrue())
-	Expect(BeIn(posibilities, resp2)).To(BeTrue())
 }

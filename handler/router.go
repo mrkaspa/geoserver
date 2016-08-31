@@ -16,7 +16,6 @@ func NewRouter() http.Handler {
 	n := negroni.Classic()
 	router := &fakeRouter{mux: mux.NewRouter()}
 	controller := &controller{persistorCreator: models.NewPersistor}
-	router.mux.HandleFunc("/ws/{username}", adapter)
 	router.mux.HandleFunc("/near", controller.nearHandler).Methods("POST")
 	router.mux.HandleFunc("/store", controller.storeHandler).Methods("POST")
 	router.mux.HandleFunc("/recent/{id}", controller.recentStrokes).Methods("GET")

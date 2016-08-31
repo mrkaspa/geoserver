@@ -31,7 +31,6 @@ var _ = BeforeSuite(func() {
 	utils.LoadEnv("../.env_test")
 	utils.InitLogger()
 	models.InitDB()
-	handler.InitSearcher(models.NewPersistor)
 	ts = httptest.NewServer(handler.NewRouter())
 })
 
