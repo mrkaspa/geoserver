@@ -76,6 +76,3 @@ A response can look like this:
 ]
 ```
 
-### Websocket
-
-#### Store and retrieve near points in real time
