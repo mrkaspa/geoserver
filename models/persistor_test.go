@@ -1,15 +1,37 @@
 package models
 
 import (
-	"fmt"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"gopkg.in/mgo.v2/bson"
+	"testing"
+	"os"
+	"github.com/mrkaspa/geoserver/utils"
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = Describe("persistor", func() {
+func TestMain(m *testing.M) {
+	utils.LoadEnv("../.env_test")
+	utils.InitLogger()
+	InitDB()
+	retCode := m.Run()
+	os.Exit(retCode)
+}
 
+func TestPersistor_Persist(t *testing.T) {
+	cleanDB()
+	persistor := NewPersistor()
+	err := persistor.Persist(Stroke{
+		UserID:   "a1",
+		Info:     "a1",
+		Location: []float64{-79.38066843, 43.65483486},
+	})
+	assert.Nil(t, err)
+	strokes, err := persistor.FindStrokes("a1")
+	assert.Nil(t, err)
+	assert.NotEmpty(t, strokes)
+}
+
+func TestPersistor_FindStrokes(t *testing.T) {
+	cleanDB()
 	a1 := Stroke{
 		UserID:   "a1",
 		Info:     "a1",
@@ -38,40 +60,19 @@ var _ = Describe("persistor", func() {
 		{a1, StrokeNear{5, 10, a3}, 0},
 	}
 
-	cleanDB := func() {
-		StrokesCollection.RemoveAll(bson.M{})
-	}
-
-	BeforeEach(func() {
+	for _, tt := range strokesTests {
 		cleanDB()
-	})
-
-	It("should save the stroke", func() {
 		persistor := NewPersistor()
-		err := persistor.Persist(Stroke{
-			UserID:   "a1",
-			Info:     "a1",
-			Location: []float64{-79.38066843, 43.65483486},
-		})
-		Expect(err).To(BeNil())
 
-		strokes, err := persistor.FindStrokes("a1")
-		Expect(err).To(BeNil())
-		Expect(strokes).ToNot(BeEmpty())
-	})
+		err := persistor.Persist(tt.stroke)
+		assert.Nil(t, err)
 
-	for i, tt := range strokesTests {
-		It("should get the expected matches", func() {
-			persistor := NewPersistor()
-			fmt.Printf("running %d", i)
-
-			err := persistor.Persist(tt.stroke)
-			Expect(err).To(BeNil())
-
-			strokes, err := persistor.PersistAndFind(tt.strokeNear)
-			Expect(err).To(BeNil())
-			Expect(len(strokes)).To(Equal(tt.expectedResults))
-		})
+		strokes, err := persistor.PersistAndFind(tt.strokeNear)
+		assert.Nil(t, err)
+		assert.Equal(t, len(strokes), tt.expectedResults)
 	}
+}
 
-})
+func cleanDB() {
+	StrokesCollection.RemoveAll(bson.M{})
+}

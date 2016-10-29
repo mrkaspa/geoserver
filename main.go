@@ -29,5 +29,4 @@ func initMain() {
 	utils.LoadEnv(".env")
 	utils.InitLogger()
 	models.InitDB()
-	handler.InitSearcher(models.NewPersistor)
 }
