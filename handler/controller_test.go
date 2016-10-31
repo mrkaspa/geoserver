@@ -8,11 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"github.com/mrkaspa/geoserver/models"
 	"os"
-	"github.com/mrkaspa/geoserver/utils"
 	"testing"
+
+	"github.com/mrkaspa/geoserver/models"
+	"github.com/mrkaspa/geoserver/utils"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func TestMain(m *testing.M) {
@@ -26,7 +28,7 @@ func TestController_storeHandler(t *testing.T) {
 	testController := controller{persistorCreator: models.NewMockPersistor}
 	stroke := models.Stroke{
 		UserID:   "a1",
-		Info:     "a1",
+		Info:     bson.M{},
 		Location: []float64{-79.38066843, 43.65483486},
 	}
 
@@ -42,7 +44,7 @@ func TestController_nearHandler(t *testing.T) {
 	testController := controller{persistorCreator: models.NewMockPersistor}
 	stroke := models.Stroke{
 		UserID:   "a1",
-		Info:     "a1",
+		Info:     bson.M{},
 		Location: []float64{-79.38066843, 43.65483486},
 	}
 

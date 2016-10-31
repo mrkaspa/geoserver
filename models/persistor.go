@@ -23,8 +23,10 @@ func NewPersistor() Persistance {
 
 func (p persistor) PersistAndFind(sn StrokeNear) ([]Stroke, error) {
 	utils.Log.Infof("Persistor executing PersistAndFind: %v", sn)
-	if err := p.save(sn.Stroke); err != nil {
-		return nil, err
+	if sn.Persist == true  {
+		if err := p.save(sn.Stroke); err != nil {
+			return nil, err
+		}
 	}
 
 	nearUsers, err := p.findNear(sn)
@@ -36,18 +38,13 @@ func (p persistor) Persist(s Stroke) error {
 	return p.save(s)
 }
 
-func (p persistor) FindStrokes(username string) ([]Stroke, error) {
-	strokes, err := p.history(username)
-	return strokes, err
-}
-
 func (p *persistor) save(stroke Stroke) error {
 	stroke.CreatedAt = time.Now()
 	utils.Log.Infof("Persisting %s stroke: %v", stroke.UserID, stroke)
 	return StrokesCollection.Insert(stroke)
 }
 
-func (p *persistor) history(username string) ([]Stroke, error) {
+func (p persistor) FindStrokes(username string) ([]Stroke, error) {
 	results := []Stroke{}
 	query := buildHistoryQuery(username)
 	err := StrokesCollection.Find(query).Sort("-created_at").All(&results)
@@ -70,6 +67,7 @@ func (p *persistor) findNear(strokeNear StrokeNear) ([]Stroke, error) {
 }
 
 func buildNearQuery(strokeNear StrokeNear) bson.M {
+
 	query := bson.M{
 		"location": bson.M{
 			"$nearSphere": bson.M{
@@ -83,6 +81,10 @@ func buildNearQuery(strokeNear StrokeNear) bson.M {
 		"user_id": bson.M{
 			"$ne": strokeNear.Stroke.UserID,
 		},
+	}
+
+	if len(strokeNear.Params) > 0 {
+		query["info"] = strokeNear.Params
 	}
 
 	if strokeNear.TimeRange > 0 {
