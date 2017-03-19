@@ -1,17 +1,12 @@
 {
 	"ImportPath": "github.com/mrkaspa/geoserver",
-	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GoVersion": "go1.8",
+	"GodepVersion": "v79",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
 			"Comment": "v0.8.6-11-g44512f0",
 			"Rev": "44512f0d08f7f81a75f5b04a2cb6d81ed25431ca"
-		},
-		{
-			"ImportPath": "github.com/gorilla/context",
-			"Comment": "v1.1-4-gaed02d1",
-			"Rev": "aed02d124ae4a0e94fea4541c8effd05bf0c8296"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
@@ -32,10 +27,6 @@
 			"ImportPath": "github.com/urfave/negroni",
 			"Comment": "v0.2.0-48-gdcaac91",
 			"Rev": "dcaac9107a7a6ba4cf5143afc145e2b70a1c12c2"
-		},
-		{
-			"ImportPath": "golang.org/x/net/websocket",
-			"Rev": "d9558e5c97f85372afee28cf2b6059d7d3818919"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
