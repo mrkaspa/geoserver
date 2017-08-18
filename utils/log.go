@@ -5,8 +5,8 @@ import (
 
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/rifflock/lfshook"
+	log "github.com/sirupsen/logrus"
 )
 
 //LogWriter for logging
